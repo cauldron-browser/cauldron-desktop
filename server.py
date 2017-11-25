@@ -79,6 +79,8 @@ def visit():
     url = request.form['url']
     print("[POST /visit] Visted {}".format(url))
     q.append(url)
+    for link in algLogic.findAllLinks(url):
+            q.append(link)
     return "Post Received! URL: {}\n".format(url)
 
 def get_path(url):
