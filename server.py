@@ -34,8 +34,7 @@ def wget_command(url):
                '--directory-prefix={}'.format(WGET_DOWNLOADS),
                # '-nv',
                url,
-               '2>&1', '>', '/dev/null',
-               '|', './worker.py']
+               '2>&1 > /dev/null | ./worker.py']
     return ' '.join(command)
 
 def create_app():
