@@ -1,24 +1,44 @@
 import subprocess
 import sys
 import time
-from flask import Flask, request
 import threading
 from multiprocessing import Queue
+
 from collections import deque
+from flask import Flask, request, jsonify
+
+import index
+import os
 
 global q
 q = deque()
+
+# def wget_command(url):
+#     """
+#     Return the parsed command for the wget command of a given url.
+#     """
+#     #return the -r here JASON SEIBEL
+#     return """wget \
+#             -N \
+#             --no-remove-listing \
+#             --convert-links \
+#             --adjust-extension \
+#             --page-requisites \
+#             --no-parent \
+#             --user-agent "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36" \
+#             {}".format(url).split()"""
 
 def wget_command(url):
     """
     Return the parsed command for the wget command of a given url.
     """
-    #change this to desired wget function
-    return "wget --mirror --convert-links --adjust-extension --page-requisites --no-parent {}".format(url).split()
+    #return the -r here JASON SEIBEL
+    return "wget -N --no-remove-listing --convert-links --adjust-extension --page-requisites --no-parent {}".format(url).split()
 
 
 def create_app():
     app = Flask(__name__)
+    app.config['index'] = index.Index()
     return app
 
 
@@ -55,7 +75,7 @@ def activate_job():
             time.sleep(0.06)
     thread = threading.Thread(target=stupid)
     thread.start()      
-    # thread.join() 
+
 
 @app.route("/visit", methods=['POST'])
 def visit():
@@ -68,15 +88,26 @@ def visit():
         # print(q)
         return "Post Received!"
 
-
-
-
 @app.route("/search")
 def search():
-    return "Hello World!"
+    # Get query_string from arguments
+    query_string = request.args['query']
+    print('[GET /search] Received query {}'.format(query_string))
+
+    # Get search results from the index, and add in paths
+    results = app.config['index'].search(query_string)
+    for result in results:
+        # TODO(ajayjain): Add in a synopsis of the article
+        # result['path'] = path_from_url(result['url'])
+        result['path'] = result['url']
+
+    # to make results serializable
+    results = [dict(r) for r in results]
+
+    return jsonify(results)
 
 @app.route("/retrieve/<path:path>")
-def retrieve():
+def retrieve(path):
     return app.send_static_file(os.path.join('name_of_folder_that_holds_cache', path).replace('\\','/'))
 
 if __name__ == '__main__':
