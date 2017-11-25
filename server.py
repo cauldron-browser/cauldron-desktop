@@ -22,7 +22,8 @@ def wget_command(url):
     Return the parsed command for the wget command of a given url.
     """
     #return the -r here JASON SEIBEL
-    return 'wget --header="Accept: text/html" --user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0"  -r -N --no-remove-listing --convert-links --adjust-extension --page-requisites --no-parent --directory-prefix={} {}'.format(WGET_DOWNLOADS, url).split()
+    return "wget -N --no-remove-listing --convert-links --adjust-extension --page-requisites --no-parent {}".format(url).split()
+
 
 def create_app():
     app = Flask(__name__)
@@ -98,13 +99,6 @@ def search():
 def retrieve(path):
     return app.send_static_file(os.path.join('name_of_folder_that_holds_cache', path).replace('\\','/'))
 
-@app.route("/index_path")
-def index_path():
-    path = request.args['path']
-    remote_url = "http://{}".format(path)
-    path = os.path.join("downloads", path)
-    app.config['index'].index_html(remote_url, path)
-    return "Indexed {}".format(path)
-
 if __name__ == '__main__':
     app.run(port=8091)
+
