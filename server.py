@@ -1,9 +1,13 @@
 import subprocess
 import sys
 import time
-from flask import Flask, request
 import threading
 from multiprocessing import Queue
+
+from flask import Flask, request, jsonify
+
+import index
+
 global q
 q = Queue(maxsize=0)
 global listOfSubs
@@ -47,6 +51,7 @@ def create_app():
 
 app = create_app()
 
+
 @app.route("/visit", methods=['POST'])
 def visit():
     
@@ -62,7 +67,17 @@ def visit():
 
 @app.route("/search")
 def search():
-    return "Hello World!"
+    # Get query_string from arguments
+    query_string = request.args['query']
+    print('[GET /search] Received query {}'.format(query_string))
+
+    # Get search results from the index, and add in paths
+    results = index.search(query_string)
+    for result in results:
+        # TODO(ajayjain): Add in a synopsis of the article
+        result['path'] = path_from_url(result['url'])
+
+    return jsonify(results)
 
 @app.route("/retrieve/<path:path>")
 def retrieve():
