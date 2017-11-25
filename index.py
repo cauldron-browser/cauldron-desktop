@@ -22,7 +22,7 @@ def parse_html_string(html_string):
     # TODO(ajayjain): use document.short_title()?
     title = document.title()
     body_html = document.summary(html_partial=True)
-    body_text = BeautifulSoup(body_html).get_text().strip()
+    body_text = BeautifulSoup(body_html, 'lxml').get_text().strip()
     parsed = ParsedDocument(title=title, content=body_text)
 
     return parsed

@@ -1,8 +1,12 @@
 from bs4 import BeautifulSoup
 import urllib.request
+import requests 
 import gensim
 from difflib import SequenceMatcher
 from rake_nltk import Rake
+import index
+from google import search
+import random
 
 def findAllLinks(url):
     # Gets all the links that are present on a webpage
@@ -48,9 +52,25 @@ def extractKeywords(text):
 
 def contentSimilarity(soupPage1,soupPage2):
     #TODO: given two pages/soups/sets of keywords, evaluates how similar/mutually relevant their content
+
     website_documents = [meta1, meta2]
     website_documents_split = [x.strip().split() for x in website_documents]
     m = gensim.models.Doc2Vec.load("word2vec.bin")
     website_vecs = [m.infer_vector(d, alpha=0.01, steps=1000) for d in website_documents_split]
 
     return None
+
+def selectedKeyWords(content):
+    return extractKeywords(content)
+
+def googleSearch(url):
+
+    resp = urllib.request.urlopen(url)
+    soup = BeautifulSoup(resp, 'lxml')
+    page = index.parse_html_string(str(soup))
+    keywords = [page.title] + selectedKeyWords(page.content)
+    counter = 0
+    for keyword in keywords:
+        results = search(keyword, stop = 5)
+        for result in results:
+            r = requests.post("http://127.0.0.1:8091/visit", data={'url': result})
