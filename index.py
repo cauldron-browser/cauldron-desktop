@@ -50,7 +50,7 @@ class Index(object):
         with open(local_path, 'r') as html_file:
             content = html_file.read()
 
-        parsed = parse_html_string(content) 
+        parsed = parse_html_string(content)
 
         # Add to the index
         self.index_parsed(parsed.title, remote_url, parsed.content)

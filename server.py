@@ -112,7 +112,7 @@ def retrieve(path):
 def index_path():
     path = request.args['path']
     remote_url = "http://{}".format(path)
-    path = os.path.join("downloads", path)
+    path = os.path.join(WGET_DOWNLOADS, path)
     app.config['index'].index_html(remote_url, path)
     return "Indexed {}".format(path)
 
