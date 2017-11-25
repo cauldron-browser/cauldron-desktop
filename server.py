@@ -94,9 +94,9 @@ def search():
 
     return jsonify(results)
 
-@app.route("/retrieve/<path:path>")
-def retrieve(path):
-    return app.send_static_file(os.path.join('name_of_folder_that_holds_cache', path).replace('\\','/'))
+@app.route("/retrieve", methods=['GET'])
+def retrieve():
+    return app.send_static_file(os.path.join('wget/downloads', request.args.get("url")).replace('\\','/'))
 
 if __name__ == '__main__':
     app.run(port=8091)
