@@ -88,7 +88,16 @@ def wget_command(url):
     Return the parsed command for the wget command of a given url.
     """
     #return the -r here JASON SEIBEL
-    return "wget -N --no-remove-listing --convert-links --adjust-extension --page-requisites --no-parent {}".format(url).split()
+    return
+        """wget \
+            -N \
+            --no-remove-listing \
+            --convert-links \
+            --adjust-extension \
+            --page-requisites \
+            --no-parent \
+            --user-agent "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36" \
+            {}".format(url).split()"""
 
 if __name__ == '__main__':
     app.run(threaded=True)

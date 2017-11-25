@@ -35,5 +35,5 @@ def search(query_string):
     query = query_parser.parse(query_string)
     results = index.searcher().search(query)
     return results
-    
+
 init()
