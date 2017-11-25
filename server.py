@@ -24,13 +24,11 @@ def wget_command(url):
     command = ['wget',
                '--header=\'Accept: text/html\'',
                '--user-agent=\'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0\'',
-               '--recursive',
+               '-e robots=off',
                '--timestamping',
-               '--no-remove-listing',
                '--convert-links',
                '--adjust-extension',
                '--page-requisites',
-               '--no-parent',
                '--directory-prefix={}'.format(WGET_DOWNLOADS),
                '-nv',
                url,
@@ -66,7 +64,7 @@ def activate_job():
                     listOfSubs.remove(sb)
             if (len(q)>0):
                 wget_job = q.popleft()
-                print('Got wget_job: ', wget_job)
+                # print('Got wget_job: ', wget_job)
                 multiThreadedwget(wget_job)
             time.sleep(0.06)
     thread = threading.Thread(target=stupid)
@@ -118,5 +116,14 @@ def index_path():
     return "Indexed {}".format(path)
 
 if __name__ == '__main__':
-    app.run(port=8091, debug=True)
+    import signal
+    def signal_handler(signal, frame):
+        print('You pressed Ctrl+C!')
+        # clear queue 
+        # maintains queue thread safety
+        while len(q) > 0:
+            q.pop()
+        sys.exit(0)
+    signal.signal(signal.SIGINT, signal_handler)
 
+    app.run(port=8091, debug=True)
