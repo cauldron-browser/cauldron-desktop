@@ -11,7 +11,7 @@ WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
 WGET_DOWNLOADS = os.path.join(WGET_DIR, "downloads")
 
 logger = logging.getLogger('worker')
-hdlr = logging.FileHandler('worker.log')
+hdlr = logging.FileHandler(os.path.join(WGET_DIR, 'worker.log'))
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
@@ -33,6 +33,11 @@ def parse(line):
     except ValueError:
         return None
 
+
+def is_html_file(path):
+    return path.endswith('.html')
+
+
 def main():
     ind = index.Index()
 
@@ -44,7 +49,7 @@ def main():
         logger.info('Worker stdin {}'.format(line))
         logger.info('Parsed {}'.format(p))
 
-        if p is not None:
+        if p is not None and p[1].endswith('.html'):
             logger.info('Found non-none path in wget output {} {}'.format(*p))
             remote_url, local_path = p
             local_path = local_path.replace(WGET_DOWNLOADS + "/", "")
