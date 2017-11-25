@@ -7,6 +7,7 @@ from multiprocessing import Queue
 from flask import Flask, request, jsonify
 
 import index
+import os
 
 global q
 q = Queue(maxsize=0)
@@ -41,16 +42,14 @@ class queueDownloader (threading.Thread):
             time.sleep(0.15)
             print(listOfSubs)
 
-
-
 def create_app():
    thread1 = queueDownloader(1, "Thread-1")
    thread1.start()
+   
    app = Flask(__name__)
+   app.config['index'] = index.Index()
    return app
-
 app = create_app()
-
 
 @app.route("/visit", methods=['POST'])
 def visit():
@@ -62,9 +61,6 @@ def visit():
         q.put(url)
         return "Post Received!"
 
-
-
-
 @app.route("/search")
 def search():
     # Get query_string from arguments
@@ -72,15 +68,19 @@ def search():
     print('[GET /search] Received query {}'.format(query_string))
 
     # Get search results from the index, and add in paths
-    results = index.search(query_string)
+    results = app.config['index'].search(query_string)
     for result in results:
         # TODO(ajayjain): Add in a synopsis of the article
-        result['path'] = path_from_url(result['url'])
+        # result['path'] = path_from_url(result['url'])
+        result['path'] = result['url']
+
+    # to make results serializable
+    results = [dict(r) for r in results]
 
     return jsonify(results)
 
 @app.route("/retrieve/<path:path>")
-def retrieve():
+def retrieve(path):
     return app.send_static_file(os.path.join('name_of_folder_that_holds_cache', path).replace('\\','/'))
 
 def wget_command(url):
@@ -88,7 +88,7 @@ def wget_command(url):
     Return the parsed command for the wget command of a given url.
     """
     #return the -r here JASON SEIBEL
-    return
+    return \
         """wget \
             -N \
             --no-remove-listing \
@@ -101,4 +101,3 @@ def wget_command(url):
 
 if __name__ == '__main__':
     app.run(threaded=True)
-

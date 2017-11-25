@@ -7,44 +7,40 @@ import whoosh.writing
 
 INDEX_DIR = os.environ.get("INDEX_DIR", "index")
 
-schema = None
-index = None
-query_parser = None
+class Index(object):
+    def __init__(self):
+        # Initialize schema and index
+        schema = whoosh.fields.Schema(title=whoosh.fields.TEXT(stored=True), 
+                                      url=whoosh.fields.ID(stored=True), 
+                                      body_text=whoosh.fields.TEXT)
 
-def init():
-    # Initialize schema and index
-    schema = whoosh.fields.Schema(title=whoosh.fields.TEXT(stored=True),
-                                  url=whoosh.fields.ID(stored=True),
-                                  body_text=whoosh.fields.TEXT)
+        if not os.path.exists(INDEX_DIR):
+            print("Creating search index at {}".format(INDEX_DIR))
+            os.mkdir(INDEX_DIR)
+            self.index = whoosh.index.create_in(INDEX_DIR, schema)
+        else:
+            print("Loading search index at {}".format(INDEX_DIR))
+            self.index = whoosh.index.open_dir(INDEX_DIR)
 
-    if not os.path.exists(INDEX_DIR):
-        print("Creating search index at {}".format(INDEX_DIR))
-        os.mkdir(INDEX_DIR)
-        index = whoosh.index.create_in(INDEX_DIR, schema)
-    else:
-        print("Loading search index at {}".format(INDEX_DIR))
-        index = whoosh.index.open_dir(INDEX_DIR)
+        # Create a query_parser that searches the body text by default
+        self.query_parser = whoosh.qparser.QueryParser("body_text", self.index.schema)
 
-    # Create a query_parser that searches the body text by default
-    query_parser = whoosh.qparser.QueryParser("body_text", index.schema)
+    def index_html(self, html_file_path):
+        # Parse contents of HTML file
+        # TODO(ajayjain): Deduplicate with Luis's code?
 
-def index_html(html_file_path):
-    # Parse contents of HTML file
-    # TODO(ajayjain): Deduplicate with Luis's code?
+        # Add to the index
+        index_parsed(title, url, body_text)
 
-    # Add to the index
-    index_parsed(title, url, body_text)
+    def index_parsed(self, title, url, body_text):
+        # TODO(ajayjain): Bulk write documents to the index
+        writer = whoosh.writing.AsyncWriter(self.index)
+        writer.add_document(title=title, url=url, body_text=body_text)
+        writer.commit()
 
-def index_parsed(title, url, body_text):
-    # TODO(ajayjain): Bulk write documents to the index
-    writer = whoosh.writing.AsyncWriter(index)
-    writer.add_document(title=title, url=url, body_text=body_text)
-    writer.commit()
+    def search(self, query_string):
+        query = self.query_parser.parse(query_string)
+        searcher = self.index.searcher()
+        results = searcher.search(query)
+        return results
 
-def search(query_string):
-    query = query_parser.parse(query_string)
-    searcher = index.searcher()
-    results = searcher.search(query)
-    return results
-
-init()
