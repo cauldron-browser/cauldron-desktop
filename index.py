@@ -31,8 +31,8 @@ class Index(object):
     def __init__(self):
         # Initialize schema for index creation
         schema = whoosh.fields.Schema(title=whoosh.fields.TEXT(stored=True),
-                                      url=whoosh.fields.ID(stored=True),
-                                      body_text=whoosh.fields.TEXT)
+                                      url=whoosh.fields.ID(stored=True, unique=True),
+                                      body_text=whoosh.fields.TEXT(stored=False))
 
         # Create index and index object. self.index can be shared between threads.
         if not os.path.exists(INDEX_DIR):
@@ -65,7 +65,7 @@ class Index(object):
 
         # TODO(ajayjain): Bulk write documents to the index
         writer = whoosh.writing.AsyncWriter(self.index)
-        writer.add_document(title=title, url=url, body_text=body_text)
+        writer.update_document(title=title, url=url, body_text=body_text)
         writer.commit()
 
     def search(self, query_string):
