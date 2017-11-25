@@ -1,5 +1,6 @@
 *.un~
 index/
+.DS_Store
 
 # Created by https://www.gitignore.io/api/python
 
