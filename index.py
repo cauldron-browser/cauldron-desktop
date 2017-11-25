@@ -9,6 +9,8 @@ import whoosh.qparser
 import whoosh.writing
 
 CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
+WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
+WGET_DOWNLOADS = os.path.join(WGET_DIR, "downloads")
 INDEX_DIR = os.path.join(CAULDRON_DIR, "index")
 
 ParsedDocument = namedtuple("ParsedDocument", ["title", "content"])
@@ -47,7 +49,7 @@ class Index(object):
 
         # Load HTML file
         content = ""
-        with open(local_path, 'r') as html_file:
+        with open(os.path.join(WGET_DOWNLOADS, local_path), 'r') as html_file:
             content = html_file.read()
 
         parsed = parse_html_string(content)
