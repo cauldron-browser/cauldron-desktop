@@ -3,9 +3,9 @@ import sys
 import time
 import threading
 from multiprocessing import Queue
-
+from urllib.parse import urlsplit
 from collections import deque
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 
 import index
 import os
@@ -31,6 +31,7 @@ def wget_command(url):
                '--adjust-extension',
                '--page-requisites',
                '--no-parent',
+               'mirror',
                '--directory-prefix={}',
                '{}',
                '2>&1 >/dev/null | ./worker.py']
@@ -58,6 +59,7 @@ def activate_job():
             listOfSubs.append(subprocess.Popen(wget_command(url), stdout=subprocess.PIPE, stderr=subprocess.STDOUT))
 
         while (True):
+            # print(q)
             for sb in listOfSubs:
                 if sb.poll() is not None:
                     listOfSubs.remove(sb)
@@ -74,6 +76,7 @@ def visit():
         #add to queue here and return fast
         url = request.form['url']
         q.append(url)
+        #print(q)
         return "Post Received! URL: {}".format(url)
 
 @app.route("/search")
@@ -94,9 +97,10 @@ def search():
 
     return jsonify(results)
 
-@app.route("/retrieve", methods=['GET'])
-def retrieve():
-    return app.send_static_file(os.path.join('wget/downloads', request.args.get("url")).replace('\\','/'))
+@app.route("/retrieve/<path:path>", methods=['GET'])
+def retrieve(path):
+    parsed = urlsplit(path)
+    return send_from_directory('wget/downloads', parsed.netloc + parsed.path + "index.html")
 
 if __name__ == '__main__':
     app.run(port=8091)
