@@ -17,28 +17,24 @@ CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
 WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
 WGET_DOWNLOADS = os.path.join(WGET_DIR, "downloads")
 
-# def wget_command(url):
-#     """
-#     Return the parsed command for the wget command of a given url.
-#     """
-#     #return the -r here JASON SEIBEL
-#     return """wget \
-#             -N \
-#             --no-remove-listing \
-#             --convert-links \
-#             --adjust-extension \
-#             --page-requisites \
-#             --no-parent \
-#             --user-agent "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36" \
-#             {}".format(url).split()"""
-
 def wget_command(url):
     """
     Return the parsed command for the wget command of a given url.
     """
-    #return the -r here JASON SEIBEL
-    return "wget -N --no-remove-listing --convert-links --adjust-extension --page-requisites --no-parent {}".format(url).split()
-
+    command = ['wget',
+               '--header="Accept: text/html"',
+               '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0"',
+               '--recursive',
+               '--timestamping',
+               '--no-remove-listing',
+               '--convert-links',
+               '--adjust-extension',
+               '--page-requisites',
+               '--no-parent',
+               '--directory-prefix={}',
+               '{}',
+               '2>&1 >/dev/null | ./worker.py']
+    return " ".join(command).format(WGET_DOWNLOADS, url).split()
 
 def create_app():
     app = Flask(__name__)
@@ -59,22 +55,13 @@ def activate_job():
             for sb in listOfSubs:
                 if sb.poll() is not None:
                     listOfSubs.remove(sb)
-            # print(listOfSubs)
-            # print("subprocess started")
             listOfSubs.append(subprocess.Popen(wget_command(url), stdout=subprocess.PIPE, stderr=subprocess.STDOUT))
-            # print(listOfSubs[0].poll())
 
         while (True):
-            # print("the thread is running")
-            # print("length of queue is: " + str(len(q)))
-            # print("current subprocces count is:" + str(len(listOfSubs)))
-            # print(listOfSubs)
             for sb in listOfSubs:
-                # print(sb.poll())
                 if sb.poll() is not None:
                     listOfSubs.remove(sb)
             if (len(q)>0):
-                # print("pop attempt")
                 multiThreadedwget(q.popleft())
             time.sleep(0.06)
     thread = threading.Thread(target=stupid)
@@ -83,14 +70,11 @@ def activate_job():
 
 @app.route("/visit", methods=['POST'])
 def visit():
-    # print("POST")
     if request.method == 'POST':
         #add to queue here and return fast
         url = request.form['url']
-        print(url)
         q.append(url)
-        # print(q)
-        return "Post Received!"
+        return "Post Received! URL: {}".format(url)
 
 
 def get_path(url):
@@ -130,3 +114,4 @@ def index_path(path):
 
 if __name__ == '__main__':
     app.run(port=8091)
+
