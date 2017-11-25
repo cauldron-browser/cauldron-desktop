@@ -88,8 +88,7 @@ def wget_command(url):
     Return the parsed command for the wget command of a given url.
     """
     #return the -r here JASON SEIBEL
-    return \
-        """wget \
+    return """wget \
             -N \
             --no-remove-listing \
             --convert-links \
