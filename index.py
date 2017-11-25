@@ -1,5 +1,6 @@
 import os
 
+import readability
 import whoosh.index
 import whoosh.fields
 import whoosh.qparser
@@ -24,8 +25,19 @@ class Index(object):
             self.index = whoosh.index.open_dir(INDEX_DIR)
 
     def index_html(self, html_file_path):
-        # Parse contents of HTML file
-        # TODO(ajayjain): Deduplicate with Luis's code?
+        # TODO(ajayjain): Switch to boilerpipe / a python wrapper
+        # TODO(ajayjain): Deduplicate with Luis's code
+
+        # Load HTML file
+        content = ""
+        with open(html_file_path, 'r') as html_file:
+            content = html_file.read()
+
+        # Parse out title and summary
+        document = readability.Document(content)
+        # TODO(ajayjain): use document.short_title()?
+        title = document.title()
+        body_text = document.summary()
 
         # Add to the index
         index_parsed(title, url, body_text)
