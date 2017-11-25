@@ -10,6 +10,8 @@ from flask import Flask, request, jsonify, send_from_directory
 import index
 import os
 
+import algLogic
+
 global q
 q = deque()
 
