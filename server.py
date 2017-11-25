@@ -2,25 +2,62 @@ import subprocess
 import sys
 import time
 from flask import Flask, request
+import threading
+from multiprocessing import Queue
+global q
+q = Queue(maxsize=0)
 global listOfSubs
 listOfSubs = []
-app = Flask(__name__)
+
+
+
+class queueDownloader (threading.Thread):
+    def __init__(self, threadID, name):
+       threading.Thread.__init__(self)
+       self.threadID = threadID
+       self.name = name
+    def run(self):
+        
+        #run this function whenever stuff is in queue
+        
+
+        def multiThreadedwget(url):
+            print(listOfSubs)
+            while (len(listOfSubs) > 3):
+                time.sleep(0.15)
+            #remove any process that finished
+            for sb in listOfSubs:
+                if sb.poll() is 0:
+                    listOfSubs.remove(sb)
+            print(listOfSubs)
+            listOfSubs.append(subprocess.Popen(wget_command(url), stdout=subprocess.PIPE, stderr=subprocess.STDOUT))
+        while (True):
+            if (True): #q.qsize()>0 here 
+                multiThreadedwget(q.get())
+            time.sleep(0.15)
+            print(listOfSubs)
+
+
+
+def create_app():
+   thread1 = queueDownloader(1, "Thread-1")
+   thread1.start()
+   app = Flask(__name__)
+   return app
+
+app = create_app()
 
 @app.route("/visit", methods=['POST'])
 def visit():
     
     if request.method == 'POST':
+        #add to queue here and return fast
         url = request.form['url']
         print(url)
-        #OnExit is callback to limit number of subprocesses to 2
-        while (len(listOfSubs) > 3):
-            time.sleep(0.3)
-            #remove any process that finished
-            for sb in listOfSubs:
-                if sb.poll() is 0:
-                    listOfSubs.remove(sb)
-        listOfSubs.append(subprocess.Popen(wget_command(url), stdout=subprocess.PIPE, stderr=subprocess.STDOUT))
+        q.put(url)
         return "Post Received!"
+
+
 
 
 @app.route("/search")
@@ -35,7 +72,8 @@ def wget_command(url):
     """
     Return the parsed command for the wget command of a given url.
     """
-    return "wget -r -N --no-remove-listing --convert-links --adjust-extension --page-requisites --no-parent {}".format(url).split()
+    #return the -r here JASON SEIBEL
+    return "wget -N --no-remove-listing --convert-links --adjust-extension --page-requisites --no-parent {}".format(url).split()
 
 if __name__ == '__main__':
     app.run(threaded=True)
