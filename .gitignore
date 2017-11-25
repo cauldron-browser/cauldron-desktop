@@ -1,6 +1,7 @@
 *.un~
 index/
 .DS_Store
+wget/
 
 # Created by https://www.gitignore.io/api/python
 
