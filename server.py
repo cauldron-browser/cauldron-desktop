@@ -105,7 +105,7 @@ def retrieve(path):
     return app.send_static_file(os.path.join('name_of_folder_that_holds_cache', path).replace('\\','/'))
 
 @app.route("/index_path")
-def index_path(path):
+def index_path():
     path = request.args['path']
     remote_url = "http://{}".format(path)
     path = os.path.join("downloads", path)
