@@ -46,7 +46,9 @@ def main():
 
         if p is not None:
             logger.info('Found non-none path in wget output {} {}'.format(*p))
-            ind.index_html(*p)
+            remote_url, local_path = p
+            local_path = local_path.replace(WGET_DOWNLOADS + "/", "")
+            ind.index_html(remote_url, local_path)
 
 if __name__ == '__main__':
     main()
