@@ -32,7 +32,7 @@ def wget_command(url):
                '--page-requisites',
                '--no-parent',
                '--directory-prefix={}'.format(WGET_DOWNLOADS),
-               # '-nv',
+               '-nv',
                url,
                '2>&1 > /dev/null | ./worker.py']
     return ' '.join(command)
