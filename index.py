@@ -1,5 +1,7 @@
+from collections import namedtuple
 import os
 
+from bs4 import BeautifulSoup
 import readability
 import whoosh.index
 import whoosh.fields
@@ -7,6 +9,20 @@ import whoosh.qparser
 import whoosh.writing
 
 INDEX_DIR = os.environ.get("INDEX_DIR", "index")
+
+ParsedDocument = namedtuple("ParsedDocument", ["title", "content"])
+
+def parse_html_string(html_string):
+    # Parse out title and summary
+    document = readability.Document(html_string)
+
+    # TODO(ajayjain): use document.short_title()?
+    title = document.title()
+    body_html = document.summary(html_partial=True)
+    body_text = BeautifulSoup(body_html).get_text().strip()
+    parsed = ParsedDocument(title=title, content=body_text)
+
+    return parsed
 
 class Index(object):
     def __init__(self):
@@ -24,25 +40,26 @@ class Index(object):
             print("Loading search index at {}".format(INDEX_DIR))
             self.index = whoosh.index.open_dir(INDEX_DIR)
 
-    def index_html(self, html_file_path):
+    def index_html(self, remote_url, local_path):
         # TODO(ajayjain): Switch to boilerpipe / a python wrapper
         # TODO(ajayjain): Deduplicate with Luis's code
 
         # Load HTML file
         content = ""
-        with open(html_file_path, 'r') as html_file:
+        with open(local_path, 'r') as html_file:
             content = html_file.read()
 
-        # Parse out title and summary
-        document = readability.Document(content)
-        # TODO(ajayjain): use document.short_title()?
-        title = document.title()
-        body_text = document.summary()
+        parsed = parse_html_string(content) 
 
         # Add to the index
-        index_parsed(title, url, body_text)
+        self.index_parsed(parsed.title, remote_url, parsed.content)
 
     def index_parsed(self, title, url, body_text):
+        print("[index index_parsed] Indexing...")
+        print("\t\t url:", url)
+        print("\t\t title:", title)
+        print("\t\t body:", body_text[:1000], "...")
+
         # TODO(ajayjain): Bulk write documents to the index
         writer = whoosh.writing.AsyncWriter(self.index)
         writer.add_document(title=title, url=url, body_text=body_text)
