@@ -9,4 +9,5 @@ readability-lxml==0.6.2
 beautifulsoup4==4.6.0
 gensim==3.1.0
 rake_nltk==1.01
+google==1.9.3
 
