@@ -13,6 +13,10 @@ import os
 global q
 q = deque()
 
+CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
+WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
+WGET_DOWNLOADS = os.path.join(WGET_DIR, "downloads")
+
 # def wget_command(url):
 #     """
 #     Return the parsed command for the wget command of a given url.
@@ -34,7 +38,6 @@ def wget_command(url):
     """
     #return the -r here JASON SEIBEL
     return "wget -N --no-remove-listing --convert-links --adjust-extension --page-requisites --no-parent {}".format(url).split()
-
 
 def create_app():
     app = Flask(__name__)

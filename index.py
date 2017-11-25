@@ -5,7 +5,8 @@ import whoosh.fields
 import whoosh.qparser
 import whoosh.writing
 
-INDEX_DIR = os.environ.get("INDEX_DIR", "index")
+CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
+INDEX_DIR = os.path.join(CAULDRON_DIR, "index")
 
 class Index(object):
     def __init__(self):
