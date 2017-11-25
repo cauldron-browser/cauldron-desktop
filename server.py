@@ -4,57 +4,68 @@ import time
 from flask import Flask, request
 import threading
 from multiprocessing import Queue
+from collections import deque
+
 global q
-q = Queue(maxsize=0)
-global listOfSubs
-listOfSubs = []
+q = deque()
 
-
-
-class queueDownloader (threading.Thread):
-    def __init__(self, threadID, name):
-       threading.Thread.__init__(self)
-       self.threadID = threadID
-       self.name = name
-    def run(self):
-        
-        #run this function whenever stuff is in queue
-        
-
-        def multiThreadedwget(url):
-            print(listOfSubs)
-            while (len(listOfSubs) > 3):
-                time.sleep(0.15)
-            #remove any process that finished
-            for sb in listOfSubs:
-                if sb.poll() is 0:
-                    listOfSubs.remove(sb)
-            print(listOfSubs)
-            listOfSubs.append(subprocess.Popen(wget_command(url), stdout=subprocess.PIPE, stderr=subprocess.STDOUT))
-        while (True):
-            if (True): #q.qsize()>0 here 
-                multiThreadedwget(q.get())
-            time.sleep(0.15)
-            print(listOfSubs)
-
+def wget_command(url):
+    """
+    Return the parsed command for the wget command of a given url.
+    """
+    #change this to desired wget function
+    return "wget --mirror --convert-links --adjust-extension --page-requisites --no-parent {}".format(url).split()
 
 
 def create_app():
-   thread1 = queueDownloader(1, "Thread-1")
-   thread1.start()
-   app = Flask(__name__)
-   return app
+    app = Flask(__name__)
+    return app
+
 
 app = create_app()
 
+@app.before_first_request
+def activate_job():
+    def stupid():
+        listOfSubs = []
+        def multiThreadedwget(url):
+            while (len(listOfSubs) > 4):
+                time.sleep(0.15)
+            #remove any process that finished
+            for sb in listOfSubs:
+                if sb.poll() is not None:
+                    listOfSubs.remove(sb)
+            # print(listOfSubs)
+            # print("subprocess started")
+            listOfSubs.append(subprocess.Popen(wget_command(url), stdout=subprocess.PIPE, stderr=subprocess.STDOUT))
+            # print(listOfSubs[0].poll())
+
+        while (True):
+            # print("the thread is running")
+            # print("length of queue is: " + str(len(q)))
+            # print("current subprocces count is:" + str(len(listOfSubs)))
+            # print(listOfSubs)
+            for sb in listOfSubs:
+                # print(sb.poll())
+                if sb.poll() is not None:
+                    listOfSubs.remove(sb)
+            if (len(q)>0):
+                # print("pop attempt")
+                multiThreadedwget(q.popleft())
+            time.sleep(0.06)
+    thread = threading.Thread(target=stupid)
+    thread.start()      
+    # thread.join() 
+
 @app.route("/visit", methods=['POST'])
 def visit():
-    
+    # print("POST")
     if request.method == 'POST':
         #add to queue here and return fast
         url = request.form['url']
         print(url)
-        q.put(url)
+        q.append(url)
+        # print(q)
         return "Post Received!"
 
 
@@ -68,12 +79,5 @@ def search():
 def retrieve():
     return app.send_static_file(os.path.join('name_of_folder_that_holds_cache', path).replace('\\','/'))
 
-def wget_command(url):
-    """
-    Return the parsed command for the wget command of a given url.
-    """
-    #return the -r here JASON SEIBEL
-    return "wget -N --no-remove-listing --convert-links --adjust-extension --page-requisites --no-parent {}".format(url).split()
-
 if __name__ == '__main__':
-    app.run(threaded=True)
+    app.run(port=8091)
