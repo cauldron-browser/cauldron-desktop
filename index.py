@@ -4,7 +4,7 @@ import whoosh.index
 import whoosh.fields
 import whoosh.qparser
 
-INDEX_DIR = os.env.get("INDEX_DIR", "index")
+INDEX_DIR = os.environ.get("INDEX_DIR", "index")
 
 schema = None
 index = None
@@ -12,7 +12,9 @@ query_parser = None
 
 def init():
     # Initialize schema and index
-    schema = whoosh.fields.Schema(title=TEXT(stored=True), url=whoosh.fields.ID(stored=True), body_text=TEXT)
+    schema = whoosh.fields.Schema(title=whoosh.fields.TEXT(stored=True), 
+                                  url=whoosh.fields.ID(stored=True), 
+                                  body_text=whoosh.fields.TEXT)
 
     if not os.path.exists(INDEX_DIR):
         print("Creating search index at {}".format(INDEX_DIR))
