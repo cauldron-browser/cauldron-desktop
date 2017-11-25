@@ -77,6 +77,8 @@ def visit():
     url = request.form['url']
     print("[POST /visit] Visted {}".format(url))
     q.append(url)
+    for link in algLogic.findAllLinks(url):
+            q.append(link)
     return "Post Received! URL: {}\n".format(url)
 
 def get_path(url):
@@ -114,4 +116,14 @@ def index_path():
     return "Indexed {}".format(path)
 
 if __name__ == '__main__':
+    import signal
+    def signal_handler(signal, frame):
+        print('You pressed Ctrl+C!')
+        # clear queue 
+        # maintains queue thread safety
+        while len(q) > 0:
+            q.pop()
+        sys.exit(0)
+    signal.signal(signal.SIGINT, signal_handler)
+
     app.run(port=8091, debug=True)

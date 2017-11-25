@@ -4,8 +4,6 @@ import gensim
 from difflib import SequenceMatcher
 from rake_nltk import Rake
 
-
-
 def findAllLinks(url):
     # Gets all the links that are present on a webpage
     resp = urllib.request.urlopen(url)
@@ -42,36 +40,17 @@ def simpleContentSimilarity(soupPage1, soupPage2):
     print(len(meta2))
     return similar(meta1,meta2)
 
-def contentSimilarity(soupPage1,soupPage2):
+def extractKeywords(text):
+    # Extracts the most important words from a given text
     r = Rake()
-    r.extract_keywords_from_text(<text to process>)
-    r.get_ranked_phrases() # To get keyword phrases ranked highest to lowest.
+    r.extract_keywords_from_text(text)
+    return r.get_ranked_phrases() # To get keyword phrases ranked highest to lowest.
 
-    meta1 = ''.join(str(elem) for elem in findMetaData(soupPage1))
-    meta2 = ''.join(str(elem) for elem in findMetaData(soupPage2))
-
+def contentSimilarity(soupPage1,soupPage2):
+    #TODO: given two pages/soups/sets of keywords, evaluates how similar/mutually relevant their content
     website_documents = [meta1, meta2]
     website_documents_split = [x.strip().split() for x in website_documents]
     m = gensim.models.Doc2Vec.load("word2vec.bin")
     website_vecs = [m.infer_vector(d, alpha=0.01, steps=1000) for d in website_documents_split]
-    return "yes"
 
-'''
-def main(page, savedPages):
-    
-    if checkURL(page, savedPages):
-        #page.relevance = #updated value
-    else:
-        savedPages.add(page)
-
-        respReference = urllib.request.urlopen(page.url)
-        soupReference = BeautifulSoup(resp, 'lxml')
-
-        for link in crawler.findAllLinks(page.url):
-
-            resp = urllib.request.urlopen(link)
-            soup = BeautifulSoup(resp, 'lxml')
-            
-            if contentSimilarity(soupReference, soup2) >= similarityThreshold:
-                #downloadPage(link)
-'''
+    return None
