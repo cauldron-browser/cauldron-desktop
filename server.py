@@ -13,28 +13,16 @@ import os
 global q
 q = deque()
 
-# def wget_command(url):
-#     """
-#     Return the parsed command for the wget command of a given url.
-#     """
-#     #return the -r here JASON SEIBEL
-#     return """wget \
-#             -N \
-#             --no-remove-listing \
-#             --convert-links \
-#             --adjust-extension \
-#             --page-requisites \
-#             --no-parent \
-#             --user-agent "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36" \
-#             {}".format(url).split()"""
+CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
+WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
+WGET_DOWNLOADS = os.path.join(WGET_DIR, "downloads")
 
 def wget_command(url):
     """
     Return the parsed command for the wget command of a given url.
     """
     #return the -r here JASON SEIBEL
-    return "wget -N --no-remove-listing --convert-links --adjust-extension --page-requisites --no-parent {}".format(url).split()
-
+    return 'wget --header="Accept: text/html" --user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0"  -r -N --no-remove-listing --convert-links --adjust-extension --page-requisites --no-parent --directory-prefix={} {}'.format(WGET_DOWNLOADS, url).split()
 
 def create_app():
     app = Flask(__name__)
