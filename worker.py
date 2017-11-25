@@ -4,9 +4,18 @@ import os
 import sys
 import index
 
+import logging
+
 CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
 WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
 WGET_DOWNLOADS = os.path.join(WGET_DIR, "downloads")
+
+logger = logging.getLogger('worker')
+hdlr = logging.FileHandler('worker.log')
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+hdlr.setFormatter(formatter)
+logger.addHandler(hdlr)
+logger.setLevel(logging.INFO)
 
 def parse(line):
     """
@@ -26,10 +35,19 @@ def parse(line):
 
 def main():
     ind = index.Index()
+
+    logger.info('Worker main')
+
     for line in sys.stdin:
         p = parse(line)
+
+        logger.info('Worker stdin {}'.format(line))
+        logger.info('Parsed {}'.format(p))
+
         if p is not None:
+            logger.info('Found non-none path in wget output {} {}'.format(*p))
             ind.index_html(*p)
 
 if __name__ == '__main__':
     main()
+
