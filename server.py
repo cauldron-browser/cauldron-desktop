@@ -19,6 +19,13 @@ CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
 WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
 WGET_DOWNLOADS = os.path.join(WGET_DIR, "downloads")
 
+DOWNLOAD_BLACKLIST = ['www.google.com', 'www.google.fi']
+
+def url_is_blacklisted(url):
+    parse = urlsplit(url)
+    domain = parse.netloc 
+    return domain in DOWNLOAD_BLACKLIST
+
 def wget_command(url):
     """
     Return the parsed command for the wget command of a given url.
@@ -78,8 +85,10 @@ def visit():
     #add to queue here and return fast
     url = request.form['url']
     print("[POST /visit] Visted {}".format(url))
-    q.append(url)
+    if not url_is_blacklisted(url):
+        q.append(url)
     for link in algLogic.findAllLinks(url):
+        if not url_is_blacklisted(link):
             q.append(link)
     return "Post Received! URL: {}\n".format(url)
 
