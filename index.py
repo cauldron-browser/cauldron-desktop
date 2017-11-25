@@ -61,21 +61,21 @@ class Index(object):
         print("[index index_parsed] Indexing...")
         print("\t\t url:", url)
         print("\t\t title:", title)
-        print("\t\t body:", body_text[:1000], "...")
+        print("\t\t body:", body_text[:250], "...")
 
         # TODO(ajayjain): Bulk write documents to the index
+        # Wrapping the AsyncWriter in a with clause seems to cause errors:
+        #     "whoosh.writing.IndexingError: This writer is closed"
         writer = whoosh.writing.AsyncWriter(self.index)
         writer.update_document(title=title, url=url, body_text=body_text)
         writer.commit()
 
     def search(self, query_string):
+        """Search for results in the index by a query string"""
         # Parse user query string
         query_parser = whoosh.qparser.QueryParser("body_text", self.index.schema)
         query = query_parser.parse(query_string)
 
-        # Search for results in the index
         searcher = self.index.searcher()
-        results = searcher.search(query)
-
-        return results
+        return searcher.search(query)
 
