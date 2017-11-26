@@ -1,5 +1,5 @@
 clean:
-	rm -r index wget url_map.db
+	rm -r index wget url_map.db .google-cookie
 
 server:
 	mkdir -p wget

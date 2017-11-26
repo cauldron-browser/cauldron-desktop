@@ -7,19 +7,26 @@ from rake_nltk import Rake
 import index
 from google import search
 import random
+import numpy as np
+import time
 
-
-def findAllLinks(url):
+def findAllLinks(soup):
     # Gets all the links that are present on a webpage
-    
-    resp = urllib.request.urlopen(url)
-    soup = BeautifulSoup(resp, 'lxml')
+    #TODO: include the relative links
+    #TODO: what to do if the link is an image?
 
     content = []
     for link in soup.find_all('a', href=True):
         if link['href'].startswith('http'):
             content.append(link['href'])
+
     return content
+
+def findRelevantLinks(soup):
+
+    all_links = [tag['href'] for tag in soup.select('p a[href]')]
+    return all_links
+
 
 def checkURL(url, setOfPages):
     # Checks if a given url is in the set setOfPages
@@ -56,33 +63,79 @@ def extractKeywords(text):
     r.extract_keywords_from_text(text)
     return r.get_ranked_phrases() # To get keyword phrases ranked highest to lowest.
 
-def contentSimilarity(soupPage1,soupPage2):
-    #TODO: given two pages/soups/sets of keywords, evaluates how similar/mutually relevant their content
+def contentSimilarity(mainVector,url, m):
+    try:
+        resp = urllib.request.urlopen(url)
+    except:
+        return 0
 
-    website_documents = [meta1, meta2]
-    website_documents_split = [x.strip().split() for x in website_documents]
-    m = gensim.models.Doc2Vec.load("word2vec.bin")
-    website_vecs = [m.infer_vector(d, alpha=0.01, steps=1000) for d in website_documents_split]
+    soup = BeautifulSoup(resp, 'lxml')
+    soup_string = str(soup)
+    if soup_string:
+        page = index.parse_html_string(soup_string)
+        split = page.content.strip().split()
+        vector = m.infer_vector(split, alpha=0.01, steps=1000)
 
-    return None
 
-def selectedKeyWords(content):
+        print("Dot product: %s"%str(np.dot(mainVector/np.linalg.norm(mainVector), vector/np.linalg.norm(vector))))
+        return np.dot(mainVector/np.linalg.norm(mainVector), vector/np.linalg.norm(vector))
+
+    return 0
+
+def selectedWeightedKeyWords(content):
 
     keywords = extractKeywords(content)
     main = keywords[:5]
     beginning = random.sample(keywords[5:len(keywords)//3],5)
     middle = random.sample(keywords[len(keywords)//3:2*len(keywords)//3],2)
     end = random.sample(keywords[2*len(keywords)//3:],1)
+
     return main+beginning+middle+end
 
-def googleSearch(url):
+def selectedKeyWords(content):
 
-    resp = urllib.request.urlopen(url)
-    soup = BeautifulSoup(resp, 'lxml')
-    page = index.parse_html_string(str(soup))
-    keywords = [page.title] + selectedKeyWords(page.content)
-    counter = 0
+    keywords = extractKeywords(content)
+    return [np.random.choice(keywords, 2 , replace=False) for i in range(5)]
+
+def googleSearch(page, q):
+
+    keywords = [page.title] + [' '.join(x) for x in selectedKeyWords(page.content)]
     for keyword in keywords:
         results = search(keyword, stop = 5)
         for result in results:
-            r = requests.post("http://127.0.0.1:8091/visit", data={'url': result})
+            q.append(result)
+
+def main(url, access_time, query, model, q):
+
+    if query:
+        results = search(query, stop = 10)
+        for result in results:
+            q.append(result)
+
+    try:
+        mainResponse = urllib.request.urlopen(url)
+    except:
+        return
+
+    mainSoup = BeautifulSoup(mainResponse, 'lxml')
+    mainPage = index.parse_html_string(str(mainSoup))
+
+    googleSearch(mainPage, q)
+
+    splitDocument = mainPage.content.strip().split()
+    mainVector = model.infer_vector(splitDocument, alpha=0.01, steps=1000)
+
+    #firstLevel = random.sample(findAllLinks(mainSoup), 10)
+
+
+
+    for link in firstLevel:
+        if contentSimilarity(mainVector, link, model) >= .4:
+            q.append(link)
+
+'''
+mainResponse = urllib.request.urlopen('https://stackoverflow.com/questions/23373471/how-to-find-all-links-in-all-paragraphs-in-beautiful-soup')
+mainSoup = BeautifulSoup(mainResponse, 'lxml')
+
+print(findRelevantLinks(mainSoup))
+'''
