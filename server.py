@@ -9,7 +9,7 @@ from collections import deque
 import google
 import path_utils
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, redirect, render_template
 
 import algLogic
 import index
@@ -18,8 +18,9 @@ from sqlitedict import SqliteDict
 global q
 q = deque()
 
-CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
-WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
+CAULDRON_DIR = os.path.dirname(os.path.realpath(__file__))
+# CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
+WGET_DIR = "wget"
 WGET_DOWNLOADS = os.path.join(WGET_DIR, "downloads")
 RETRIEVE_CACHE_PATH = os.path.join(CAULDRON_DIR, "url_map.db")
 
@@ -96,7 +97,7 @@ def visit():
         q.append(url)
     if request.form['query']:
         results = google.search(request.form['query'], stop = 5)
-        for result in results:       
+        for result in results:
             q.append(result)
     else:
         for link in algLogic.findAllLinks(url):
@@ -119,9 +120,15 @@ def search():
     # Copy results into dicts for modification and serialization
     results = [dict(result) for result in raw_results]
 
-    for result in results:
-        # TODO(ajayjain): Add in a synopsis of the article
-        result['path'] = get_path(result['url'])
+    # Add the local filesystem path to each search result
+    with SqliteDict(RETRIEVE_CACHE_PATH) as url_map:
+        for result in results:
+            # TODO(ajayjain): Add in a synopsis of the article
+            url = path_utils.strip_scheme(result['url'])
+            try:
+                result['path'] = "file://" + os.path.join(CAULDRON_DIR, WGET_DOWNLOADS, url_map[url])
+            except KeyError as e:
+                print("[GET /search] Error looking up URL in map", url, e)
 
     return jsonify(results)
 
@@ -131,6 +138,8 @@ def retrieve(url):
         try:
             url = path_utils.strip_scheme(url)
             path = url_map[url]
+            #redirect_url = "file://" + os.path.join(CAULDRON_DIR, WGET_DOWNLOADS, path)
+            #print("[GET /retrieve/<path:url>] Redirecting to", redirect_url)
             return send_from_directory(WGET_DOWNLOADS, path)
         except KeyError:
             return "not found!", 404
