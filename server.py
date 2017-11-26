@@ -34,10 +34,14 @@ def wget_command(url):
     """
     Return the parsed command for the wget command of a given url.
     """
-    command = ['wget',
+    command = ['sleep 0.2;'
+               'wget',
                '--header=\'Accept: text/html\'',
                '--user-agent=\'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0\'',
                '-e robots=off',
+               '--dns-timeout=5',
+               '--connect-timeout=5',
+               '--tries=3',
                '--timestamping',
                '--convert-links',
                '--adjust-extension',
