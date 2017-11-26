@@ -37,11 +37,6 @@ def parse(line):
         return None
 
 
-def is_html_file(path):
-    logger.info(path)
-    return path.endswith('.html')
-
-
 def main():
     ind = index.Index()
 
@@ -67,9 +62,9 @@ def main():
         url_map.commit()
 
     for remote_url, local_path in parsed_paths:
-        if is_html_file(local_path):
+        if path_utils.is_html_document(remote_url, local_path):
+            logger.info('Indexing html path in wget output: {} {}'.format(remote_url, local_path))
             local_path = local_path.replace(WGET_DOWNLOADS + "/", "")
-            logger.info('Found non-none path in wget output {} {}'.format(remote_url, local_path))
             ind.index_html(remote_url, local_path)
 
     logger.info('Worker EOF reached')
