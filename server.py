@@ -143,6 +143,8 @@ def search():
     for result in results:
         # TODO(ajayjain): Add in a synopsis of the article
         result['path'] = get_path(result['url'])
+        result['body_text'] = result['summary_text']
+        del result['summary_text']
 
     return jsonify(results)
 
