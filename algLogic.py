@@ -64,21 +64,23 @@ def extractKeywords(text):
     return r.get_ranked_phrases() # To get keyword phrases ranked highest to lowest.
 
 def contentSimilarity(mainVector,url, m):
-
     try:
         resp = urllib.request.urlopen(url)
     except:
         return 0
+
     soup = BeautifulSoup(resp, 'lxml')
-    page = index.parse_html_string(str(soup))
+    soup_string = str(soup)
+    if soup_string:
+        page = index.parse_html_string(soup_string)
+        split = page.content.strip().split()
+        vector = m.infer_vector(split, alpha=0.01, steps=1000)
 
 
-    split = page.content.strip().split()
-    vector = m.infer_vector(split, alpha=0.01, steps=1000)
+        print("Dot product: %s"%str(np.dot(mainVector/np.linalg.norm(mainVector), vector/np.linalg.norm(vector))))
+        return np.dot(mainVector/np.linalg.norm(mainVector), vector/np.linalg.norm(vector))
 
-
-    print("Dot product: %s"%str(np.dot(mainVector/np.linalg.norm(mainVector), vector/np.linalg.norm(vector))))
-    return np.dot(mainVector/np.linalg.norm(mainVector), vector/np.linalg.norm(vector))
+    return 0
 
 def selectedWeightedKeyWords(content):
 

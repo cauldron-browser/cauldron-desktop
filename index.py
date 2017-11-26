@@ -1,5 +1,6 @@
 from collections import namedtuple
 import os
+import sys
 
 from bs4 import BeautifulSoup
 import readability
@@ -50,7 +51,11 @@ class Index(object):
         # Load HTML file
         content = ""
         with open(os.path.join(WGET_DOWNLOADS, local_path), 'r') as html_file:
-            content = html_file.read()
+            try:
+                content = html_file.read()
+            except UnicodeDecodeError as e:
+                print('UnicodeDecodeError in Index, reading a file', e)
+                return
 
         parsed = parse_html_string(content)
 
