@@ -14,5 +14,5 @@ text = "Thomas A. Anderson is a man living two lives. By day he is an " + \
     "the Matrix and confront the agents: super-powerful computer " + \
     "programs devoted to snuffing out Neo and the entire human " + \
     "rebellion. "
-
+    
 print(summarize(text))

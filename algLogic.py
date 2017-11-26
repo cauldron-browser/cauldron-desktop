@@ -114,6 +114,7 @@ def main(url, access_time, query, model, q):
 
     try:
         mainResponse = urllib.request.urlopen(url)
+
     except:
         return
 
@@ -125,16 +126,10 @@ def main(url, access_time, query, model, q):
     splitDocument = mainPage.content.strip().split()
     mainVector = model.infer_vector(splitDocument, alpha=0.01, steps=1000)
 
-    #firstLevel = random.sample(findAllLinks(mainSoup), 10)
+    firstLevel = random.sample(findAllLinks(mainSoup), 15)
 
 
 
     for link in firstLevel:
         if contentSimilarity(mainVector, link, model) >= .4:
             q.append(link)
-
-
-mainResponse = urllib.request.urlopen('https://stackoverflow.com/questions/23373471/how-to-find-all-links-in-all-paragraphs-in-beautiful-soup')
-mainSoup = BeautifulSoup(mainResponse, 'lxml')
-
-print(findRelevantLinks(mainSoup))
