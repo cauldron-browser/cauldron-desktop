@@ -6,6 +6,7 @@ import threading
 from multiprocessing import Queue
 from urllib.parse import urlsplit
 from collections import deque
+import gensim
 
 from flask import Flask, request, jsonify, send_from_directory
 
@@ -16,6 +17,10 @@ import algLogic
 
 global q
 q = deque()
+
+global model
+model = gensim.models.Doc2Vec.load("doc2vec.bin")
+
 
 CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
 WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
@@ -84,15 +89,8 @@ def visit():
     query = request.form['query']
 
     print("[POST /visit] Visted {}".format(url))
-
-    def NLP(url):
-        #call luis file
-    thread = threading.Thread(target=NLP, args=[url,access_time,query,q])
+    thread = threading.Thread(target=algLogic.main, args=[url,access_time,query, model, q])
     thread.start()
-
-    q.append(url)
-    for link in algLogic.findAllLinks(url):
-            q.append(link)
     return "Post Received! URL: {}\n".format(url)
 
 def get_path(url):
