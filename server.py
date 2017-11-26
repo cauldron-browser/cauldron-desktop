@@ -6,6 +6,7 @@ import threading
 from multiprocessing import Queue
 from urllib.parse import urlsplit
 from collections import deque
+import google
 
 from flask import Flask, request, jsonify, send_from_directory
 
@@ -89,9 +90,14 @@ def visit():
     print("[POST /visit] Visted {}".format(url))
     if not url_is_blacklisted(url):
         q.append(url)
-    for link in algLogic.findAllLinks(url):
-        if not url_is_blacklisted(link):
-            q.append(link)
+    if request.form['query']:
+        results = google.search(request.form['query'], stop = 5)
+        for result in results:       
+            q.append(result)
+    else:
+        for link in algLogic.findAllLinks(url):
+            if not url_is_blacklisted(link):
+                q.append(link)
     return "Post Received! URL: {}\n".format(url)
 
 def get_path(url):
@@ -118,7 +124,7 @@ def search():
 @app.route("/retrieve/<path:path>", methods=['GET'])
 def retrieve(path):
     parsed = urlsplit(path)
-    return send_from_directory('wget/downloads', parsed.netloc + parsed.path + "index.html")
+    return send_from_directory('wget/downloads', parsed.netloc + parsed.path)
 
 @app.route("/index_path")
 def index_path():
