@@ -109,8 +109,8 @@ venv.bak/
 .mypy_cache/
 
 # Models
-word2vec.bin
-word2vec.bin.syn0.npy
-word2vec.bin.syn1neg.npy
+doc2vec.bin
+doc2vec.bin.syn0.npy
+doc2vec.bin.syn1neg.npy
 
 # End of https://www.gitignore.io/api/python
