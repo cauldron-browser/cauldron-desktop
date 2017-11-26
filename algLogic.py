@@ -95,7 +95,7 @@ def selectedWeightedKeyWords(content):
 def selectedKeyWords(content):
 
     keywords = extractKeywords(content)
-    return [np.random.choice(keywords, 2 , replace=False) for i in range(5)]
+    return [np.random.choice(keywords, 2 , replace=False) for i in range(7)]
 
 def googleSearch(page, q):
 
@@ -133,9 +133,8 @@ def main(url, access_time, query, model, q):
         if contentSimilarity(mainVector, link, model) >= .4:
             q.append(link)
 
-'''
+
 mainResponse = urllib.request.urlopen('https://stackoverflow.com/questions/23373471/how-to-find-all-links-in-all-paragraphs-in-beautiful-soup')
 mainSoup = BeautifulSoup(mainResponse, 'lxml')
 
 print(findRelevantLinks(mainSoup))
-'''
