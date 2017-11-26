@@ -88,7 +88,7 @@ def selectedWeightedKeyWords(content):
 def selectedKeyWords(content):
 
     keywords = extractKeywords(content)
-    return np.random.choice(keywords, 2 , replace=False)
+    return [np.random.choice(keywords, 2 , replace=False) for i in range(5)]
 
 def googleSearch(page, q):
 
