@@ -3,6 +3,7 @@ index/
 .DS_Store
 wget/
 url_map.db
+.google-cookie
 
 # Created by https://www.gitignore.io/api/python
 
