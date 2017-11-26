@@ -75,11 +75,21 @@ def activate_job():
     thread.start()
 
 
+
 @app.route("/visit", methods=['POST'])
 def visit():
     #add to queue here and return fast
     url = request.form['url']
+    access_time = request.form['access_time']
+    query = request.form['query']
+
     print("[POST /visit] Visted {}".format(url))
+
+    def NLP(url):
+        #call luis file
+    thread = threading.Thread(target=NLP, args=[url,access_time,query,q])
+    thread.start()
+
     q.append(url)
     for link in algLogic.findAllLinks(url):
             q.append(link)
