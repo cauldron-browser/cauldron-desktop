@@ -11,6 +11,7 @@ import path_utils
 import gensim
 
 from flask import Flask, request, jsonify, send_from_directory
+from bs4 import BeautifulSoup
 
 import algLogic
 import index
@@ -29,6 +30,8 @@ WGET_DOWNLOADS = os.path.join(WGET_DIR, "downloads")
 RETRIEVE_CACHE_PATH = os.path.join(CAULDRON_DIR, "url_map.db")
 
 DOWNLOAD_BLACKLIST = ['www.google.com', 'www.google.fi']
+
+IPS = []
 
 def url_is_blacklisted(url):
     parse = urlsplit(url)
@@ -54,6 +57,7 @@ def wget_command(url):
                '--span-hosts',
                '--directory-prefix={}'.format(WGET_DOWNLOADS),
                '-nv',
+               '--span-hosts',
                '"' + url + '"',
                '2>&1 > /dev/null | ./worker.py']
     return ' '.join(command)
@@ -151,12 +155,24 @@ def search():
 @app.route("/retrieve/<path:url>", methods=['GET'])
 def retrieve(url):
     with SqliteDict(RETRIEVE_CACHE_PATH) as url_map:
-        try:
-            url = path_utils.strip_scheme(url)
+        url = path_utils.strip_scheme(url)
+        try: 
             path = url_map[url]
-            return send_from_directory(WGET_DOWNLOADS, path)
+            if path.endswith('.html'):
+                with open(os.path.join(WGET_DOWNLOADS, path), 'r') as f:
+                    return f.read()
+                    doc = Document(f.read())
+                    print(doc.content())
+                    return doc.content()
+            else: 
+                return send_from_directory(WGET_DOWNLOADS, path)
         except KeyError:
-            return "not found!", 404
+            url_without_extension = url.rpartition('.')[0]
+            try:
+                path = url_map[url_without_extension]
+                return send_from_directory(WGET_DOWNLOADS, path)
+            except KeyError:
+                return "not found!", 404
 
 @app.route("/index_path")
 def index_path():

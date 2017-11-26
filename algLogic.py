@@ -19,7 +19,14 @@ def findAllLinks(soup):
     for link in soup.find_all('a', href=True):
         if link['href'].startswith('http'):
             content.append(link['href'])
+
     return content
+
+def findRelevantLinks(soup):
+
+    all_links = [tag['href'] for tag in soup.select('p a[href]')]
+    return all_links
+
 
 def checkURL(url, setOfPages):
     # Checks if a given url is in the set setOfPages
@@ -88,7 +95,7 @@ def selectedWeightedKeyWords(content):
 def selectedKeyWords(content):
 
     keywords = extractKeywords(content)
-    return [np.random.choice(keywords, 2 , replace=False) for i in range(5)]
+    return [np.random.choice(keywords, 2 , replace=False) for i in range(7)]
 
 def googleSearch(page, q):
 
@@ -118,9 +125,16 @@ def main(url, access_time, query, model, q):
     splitDocument = mainPage.content.strip().split()
     mainVector = model.infer_vector(splitDocument, alpha=0.01, steps=1000)
 
-    firstLevel = findAllLinks(mainSoup)
+    #firstLevel = random.sample(findAllLinks(mainSoup), 10)
+
 
 
     for link in firstLevel:
         if contentSimilarity(mainVector, link, model) >= .4:
             q.append(link)
+
+
+mainResponse = urllib.request.urlopen('https://stackoverflow.com/questions/23373471/how-to-find-all-links-in-all-paragraphs-in-beautiful-soup')
+mainSoup = BeautifulSoup(mainResponse, 'lxml')
+
+print(findRelevantLinks(mainSoup))

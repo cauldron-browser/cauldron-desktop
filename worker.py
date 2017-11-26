@@ -65,6 +65,7 @@ def main():
             url_map[remote_url] = local_path
 
         url_map.commit()
+        #print(list(url_map.keys()))
 
     for remote_url, local_path in parsed_paths:
         if is_html_file(local_path):
