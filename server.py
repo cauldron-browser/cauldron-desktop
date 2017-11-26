@@ -43,6 +43,7 @@ def wget_command(url):
                '--convert-links',
                '--adjust-extension',
                '--page-requisites',
+               '--span-hosts',
                '--directory-prefix={}'.format(WGET_DOWNLOADS),
                '-nv',
                '"' + url + '"',
@@ -54,7 +55,7 @@ def create_app():
     app.config['index'] = index.Index()
     return app
 
-# wget --header='Accept: text/html' --user-agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0' -e robots=off --timestamping --convert-links --adjust-extension --page-requisites --directory-prefix=wget/downloads/ -nv
+# wget --header="Accept: text/html" --user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0" -e robots=off --timestamping --convert-links --adjust-extension --page-requisites --span-hosts
 
 app = create_app()
 
