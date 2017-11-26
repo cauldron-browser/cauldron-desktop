@@ -35,6 +35,7 @@ def parse(line):
 
 
 def is_html_file(path):
+    logger.info(path)
     return path.endswith('.html')
 
 
@@ -54,6 +55,8 @@ def main():
             remote_url, local_path = p
             local_path = local_path.replace(WGET_DOWNLOADS + "/", "")
             ind.index_html(remote_url, local_path)
+
+    logger.info('Worker EOF reached')
 
 if __name__ == '__main__':
     main()

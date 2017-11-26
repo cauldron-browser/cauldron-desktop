@@ -44,34 +44,37 @@ def create_app():
     app.config['index'] = index.Index()
     return app
 
+# wget --header='Accept: text/html' --user-agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0' -e robots=off --timestamping --convert-links --adjust-extension --page-requisites --directory-prefix=wget/downloads/ -nv
 
 app = create_app()
 
+
 @app.before_first_request
-def activate_job():
-    def stupid():
-        listOfSubs = []
-        def multiThreadedwget(url):
-            while (len(listOfSubs) > 4):
-                time.sleep(0.15)
-            #remove any process that finished
-            for sb in listOfSubs:
-                if sb.poll() is not None:
-                    listOfSubs.remove(sb)
-            #listOfSubs.append(subprocess.Popen(wget_command(url), stdout=subprocess.PIPE, stderr=subprocess.STDOUT))
-            listOfSubs.append(subprocess.Popen(wget_command(url), shell=True))
+def spawn_download_queue_watcher():
+    def download_queue_watcher():
+        subprocesses = []
+
+        def download_next_url():
+            # Get the next queued URL
+            try:
+                url = q.popleft()
+                subprocesses.append(subprocess.Popen(wget_command(url), shell=True))
+                # subprocesses[-1].wait()
+            except IndexError:
+                # The queue was empty, nothing to download
+                return False
 
         while (True):
-            # print(q)
-            for sb in listOfSubs:
-                if sb.poll() is not None:
-                    listOfSubs.remove(sb)
-            if (len(q)>0):
-                wget_job = q.popleft()
-                # print('Got wget_job: ', wget_job)
-                multiThreadedwget(wget_job)
-            time.sleep(0.06)
-    thread = threading.Thread(target=stupid)
+            for subproc in subprocesses:
+                if subproc.poll() is not None:
+                    subprocesses.remove(subproc)
+
+            if len(q) and len(subprocesses) <= 4:
+                download_next_url()
+
+            time.sleep(0.1)
+
+    thread = threading.Thread(target=download_queue_watcher)
     thread.start()
 
 
@@ -82,7 +85,7 @@ def visit():
     print("[POST /visit] Visted {}".format(url))
     q.append(url)
     for link in algLogic.findAllLinks(url):
-            q.append(link)
+        q.append(link)
     return "Post Received! URL: {}\n".format(url)
 
 def get_path(url):
