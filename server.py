@@ -8,6 +8,7 @@ from urllib.parse import urlsplit
 from collections import deque
 import google
 import path_utils
+import gensim
 
 from flask import Flask, request, jsonify, send_from_directory
 
@@ -17,6 +18,10 @@ from sqlitedict import SqliteDict
 
 global q
 q = deque()
+
+global model
+model = gensim.models.Doc2Vec.load("doc2vec.bin")
+
 
 CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
 WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
@@ -88,22 +93,33 @@ def spawn_download_queue_watcher():
     thread.start()
 
 
+
 @app.route("/visit", methods=['POST'])
 def visit():
     #add to queue here and return fast
     url = request.form['url']
+    access_time = request.form['access_time']
+    query = request.form['query']
+
     print("[POST /visit] Visted {}".format(url))
     if not url_is_blacklisted(url):
         q.append(url)
-    if request.form['query']:
-        results = google.search(request.form['query'], stop = 5)
-        for result in results:       
-            q.append(result)
-    else:
-        for link in algLogic.findAllLinks(url):
-            if not url_is_blacklisted(link):
-                q.append(link)
+   #if request.form['query']:
+   #    results = google.search(request.form['query'], stop = 5)
+   #    for result in results:       
+   #        q.append(result)
+   #else:
+   #    for link in algLogic.findAllLinks(url):
+   #        if not url_is_blacklisted(link):
+   #            q.append(link)
+    thread = threading.Thread(target=algLogic.main, args=[url,access_time,query, model, q])
+    thread.start()
     return "Post Received! URL: {}\n".format(url)
+
+@app.route("/check-q")
+def check_queue():
+    print(q)
+    return "checked", 200
 
 def get_path(url):
     return url.replace("http://", "").replace("https://", "")
