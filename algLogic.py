@@ -61,17 +61,14 @@ def contentSimilarity(mainVector,url, m):
     try:
         resp = urllib.request.urlopen(url)
     except:
-        print("Request not 200.",str(time.time()-initialTime))
         return 0
     soup = BeautifulSoup(resp, 'lxml')
     page = index.parse_html_string(str(soup))
 
-    print("     Finished processing page",str(time.time()-initialTime))
 
     split = page.content.strip().split()
     vector = m.infer_vector(split, alpha=0.01, steps=1000)
 
-    print("     Finished generating vector",str(time.time()-initialTime))
 
     print("Dot product: %s"%str(np.dot(mainVector/np.linalg.norm(mainVector), vector/np.linalg.norm(vector))))
     return np.dot(mainVector/np.linalg.norm(mainVector), vector/np.linalg.norm(vector))

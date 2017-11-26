@@ -93,6 +93,11 @@ def visit():
     thread.start()
     return "Post Received! URL: {}\n".format(url)
 
+@app.route("/check-q")
+def check_queue():
+    print(q)
+    return "checked", 200
+
 def get_path(url):
     return url.replace("http://", "").replace("https://", "")
 
