@@ -8,6 +8,7 @@ import index
 from google import search
 import random
 
+
 def findAllLinks(url):
     # Gets all the links that are present on a webpage
     

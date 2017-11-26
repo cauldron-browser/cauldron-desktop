@@ -7,13 +7,13 @@ from multiprocessing import Queue
 from urllib.parse import urlsplit
 from collections import deque
 import google
+import path_utils
 
 from flask import Flask, request, jsonify, send_from_directory
 
 import algLogic
 import index
-
-import algLogic
+from sqlitedict import SqliteDict
 
 global q
 q = deque()
@@ -21,6 +21,7 @@ q = deque()
 CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
 WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
 WGET_DOWNLOADS = os.path.join(WGET_DIR, "downloads")
+RETRIEVE_CACHE_PATH = os.path.join(CAULDRON_DIR, "url_map.db")
 
 DOWNLOAD_BLACKLIST = ['www.google.com', 'www.google.fi']
 
@@ -43,7 +44,7 @@ def wget_command(url):
                '--page-requisites',
                '--directory-prefix={}'.format(WGET_DOWNLOADS),
                '-nv',
-               url,
+               '"' + url + '"',
                '2>&1 > /dev/null | ./worker.py']
     return ' '.join(command)
 
@@ -124,10 +125,15 @@ def search():
 
     return jsonify(results)
 
-@app.route("/retrieve/<path:path>", methods=['GET'])
-def retrieve(path):
-    parsed = urlsplit(path)
-    return send_from_directory('wget/downloads', parsed.netloc + parsed.path)
+@app.route("/retrieve/<path:url>", methods=['GET'])
+def retrieve(url):
+    with SqliteDict(RETRIEVE_CACHE_PATH) as url_map:
+        try:
+            url = path_utils.strip_scheme(url)
+            path = url_map[url]
+            return send_from_directory(WGET_DOWNLOADS, path)
+        except KeyError:
+            return "not found!", 404
 
 @app.route("/index_path")
 def index_path():

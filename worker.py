@@ -5,10 +5,13 @@ import sys
 import index
 
 import logging
+from sqlitedict import SqliteDict
+import path_utils
 
 CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
 WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
 WGET_DOWNLOADS = os.path.join(WGET_DIR, "downloads")
+RETRIEVE_CACHE_PATH = os.path.join(CAULDRON_DIR, "url_map.db")
 
 logger = logging.getLogger('worker')
 hdlr = logging.FileHandler(os.path.join(WGET_DIR, 'worker.log'))
@@ -43,6 +46,7 @@ def main():
     ind = index.Index()
 
     logger.info('Worker main')
+    parsed_paths = []
 
     for line in sys.stdin:
         p = parse(line)
@@ -50,10 +54,22 @@ def main():
         logger.info('Worker stdin {}'.format(line))
         logger.info('Parsed {}'.format(p))
 
-        if p is not None and p[1].endswith('.html'):
-            logger.info('Found non-none path in wget output {} {}'.format(*p))
-            remote_url, local_path = p
+        if p is not None:
+            parsed_paths.append(p)
+
+    with SqliteDict(RETRIEVE_CACHE_PATH) as url_map:
+        for remote_url, local_path in parsed_paths:
             local_path = local_path.replace(WGET_DOWNLOADS + "/", "")
+
+            remote_url = path_utils.strip_scheme(remote_url)
+            url_map[remote_url] = local_path
+
+        url_map.commit()
+
+    for remote_url, local_path in parsed_paths:
+        if is_html_file(local_path):
+            local_path = local_path.replace(WGET_DOWNLOADS + "/", "")
+            logger.info('Found non-none path in wget output {} {}'.format(remote_url, local_path))
             ind.index_html(remote_url, local_path)
 
     logger.info('Worker EOF reached')

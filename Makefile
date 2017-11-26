@@ -1,5 +1,5 @@
 clean:
-	rm -r index wget
+	rm -r index wget url_map.db
 
 server:
 	mkdir -p wget
