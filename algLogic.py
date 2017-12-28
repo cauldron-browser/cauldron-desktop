@@ -126,10 +126,9 @@ def main(url, access_time, query, model, q):
     splitDocument = mainPage.content.strip().split()
     mainVector = model.infer_vector(splitDocument, alpha=0.01, steps=1000)
 
-    firstLevel = random.sample(findAllLinks(mainSoup), 15)
-
-
+    firstLevel = random.sample(findAllLinks(mainSoup), 10)
 
     for link in firstLevel:
         if contentSimilarity(mainVector, link, model) >= .4:
             q.append(link)
+
