@@ -10,13 +10,14 @@ import whoosh.qparser
 import whoosh.writing
 
 from paths import *
+import path_utils
 
 
 ParsedDocument = namedtuple("ParsedDocument", ["title", "content"])
 
 
 def parse_html_string(html_string):
-    # Parse out title and summary
+    # Parse out title and body text
     document = readability.Document(html_string)
 
     # TODO(ajayjain): use document.short_title()?
@@ -28,13 +29,22 @@ def parse_html_string(html_string):
     return parsed
 
 
+def make_preview(text, max_length=250):
+    """Return an excerpt view of a string"""
+    preview = text.replace("\n", " ").strip()
+
+    if len(preview) > max_length:
+        preview = preview[:max_length-3].strip() + "..."
+
+    return preview
+
+
 class Index(object):
     def __init__(self):
         # Initialize schema for index creation
         schema = whoosh.fields.Schema(title=whoosh.fields.TEXT(stored=True),
                                       url=whoosh.fields.ID(stored=True, unique=True),
-                                      body_text=whoosh.fields.TEXT(stored=False),
-                                      summary_text=whoosh.fields.TEXT(stored=True))
+                                      body_text=whoosh.fields.TEXT(stored=True))
 
         # Create index and index object. self.index can be shared between threads.
         if not os.path.exists(INDEX_DIR):
@@ -64,17 +74,21 @@ class Index(object):
         self.index_parsed(parsed.title, remote_url, parsed.content)
 
     def index_parsed(self, title, url, body_text):
+        preview = make_preview(body_text, max_length=100)
+
         print("[index index_parsed] Indexing...")
-        print("\t\t url:", url)
-        print("\t\t title:", title)
-        print("\t\t body:", body_text[:250], "...")
-        summary = ' '.join(body_text.split())[:250] + "..."
+        print("\turl:  ", url)
+        print("\ttitle:", title)
+        print("\tbody: ", preview, "...")
 
         # TODO(ajayjain): Bulk write documents to the index
         # Wrapping the AsyncWriter in a with clause seems to cause errors:
         #     "whoosh.writing.IndexingError: This writer is closed"
         writer = whoosh.writing.AsyncWriter(self.index)
-        writer.update_document(title=title, url=url, body_text=body_text, summary_text=summary)
+        writer.update_document(
+                title=title,
+                url=url,
+                body_text=body_text)
         writer.commit()
 
     def search(self, query_string):
@@ -84,5 +98,16 @@ class Index(object):
         query = query_parser.parse(query_string)
 
         searcher = self.index.searcher()
-        return searcher.search(query)
+        raw_results = searcher.search(query)
+
+        # Copy results into dicts for modification and serialization
+        results = [dict(result) for result in raw_results]
+
+        for result in results:
+            # Remove scheme from URL displayed to user
+            result['path'] = path_utils.strip_scheme(result['url'])
+            # Display only a preview of the article text
+            result['body_text'] = make_preview(result['body_text'])
+
+        return results
 

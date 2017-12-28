@@ -19,8 +19,8 @@ from sqlitedict import SqliteDict
 
 import algLogic
 import index
-import path_utils
 from paths import *
+import path_utils
 
 
 ###########################
@@ -88,7 +88,7 @@ def wget_command(url):
                '--directory-prefix={}'.format(WGET_DOWNLOADS),
                '-nv',
                '--span-hosts',
-               '"' + url + '"',
+               '"{}"'.format(url),
                '2>&1 > /dev/null | ./worker.py']
     return ' '.join(command)
 
@@ -168,18 +168,8 @@ def search():
     query_string = request.args['query']
     print('[GET /search] Received query {}'.format(query_string))
 
-    # Get search results from the index, and add in paths
-    raw_results = search_index.search(query_string)
-
-    # Copy results into dicts for modification and serialization
-    results = [dict(result) for result in raw_results]
-
-    for result in results:
-        # TODO(ajayjain): Add in a synopsis of the article
-        result['path'] = path_utils.strip_scheme(result['url'])
-        result['body_text'] = result['summary_text']
-        del result['summary_text']
-
+    # Get search results from the index
+    results = search_index.search(query_string)
     return jsonify(results)
 
 
@@ -217,7 +207,7 @@ def index_path():
 
 def on_exit(signal, frame):
     """Clear queue to maintain queue thread safety"""
-    print('You pressed Ctrl+C! Clearing dowload queue ({} items)...'
+    print('You pressed Ctrl+C! Clearing download queue ({} items)...'
           .format(len(q)))
     while len(q) > 0:
         q.pop()
