@@ -22,11 +22,10 @@ import index
 import path_utils
 from paths import *
 
-###########################
-# Parameters and arguments
-###########################
 
-IPS = []
+###########################
+# Server arguments
+###########################
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--predictive", default=False, action="store_true",
@@ -37,6 +36,7 @@ parser.add_argument("--debug", default=False, action="store_true",
 parser.add_argument("--port", default=8091,
                     help="Port on which to run server")
 args = parser.parse_args()
+
 
 ###########################
 # Globals
@@ -65,7 +65,7 @@ app = Flask(__name__)
 def url_is_blacklisted(url):
     parse = urlsplit(url)
     domain = parse.netloc
-    return domain in DOWNLOAD_BLACKLIST
+    return domain in download_blacklist
 
 
 def wget_command(url):
