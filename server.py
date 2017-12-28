@@ -20,20 +20,11 @@ from sqlitedict import SqliteDict
 import algLogic
 import index
 import path_utils
-
+from paths import *
 
 ###########################
 # Parameters and arguments
 ###########################
-
-CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
-WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
-WGET_DOWNLOADS = os.path.join(WGET_DIR, "downloads")
-RETRIEVE_CACHE_PATH = os.path.join(CAULDRON_DIR, "url_map.db")
-
-DEBUG = False
-
-DOWNLOAD_BLACKLIST = ['www.google.com', 'www.google.fi']
 
 IPS = []
 
@@ -47,11 +38,35 @@ parser.add_argument("--port", default=8091,
                     help="Port on which to run server")
 args = parser.parse_args()
 
+###########################
+# Globals
+###########################
+
+q = deque()
+
+if args.predictive:
+    doc2vec_model = gensim.models.Doc2Vec.load("doc2vec.bin")
+
+search_index = index.Index()
+
+download_blacklist = set()
+with open(DOWNLOAD_BLACKLIST_PATH, "r") as blacklist_file:
+    for site in blacklist_file:
+        site = site.strip()
+        download_blacklist.add(site)
+
+app = Flask(__name__)
+
+
+###########################
+# Utility methods
+###########################
 
 def url_is_blacklisted(url):
     parse = urlsplit(url)
     domain = parse.netloc
     return domain in DOWNLOAD_BLACKLIST
+
 
 def wget_command(url):
     """
@@ -77,20 +92,6 @@ def wget_command(url):
                '2>&1 > /dev/null | ./worker.py']
     return ' '.join(command)
 
-###########################
-# Globals
-###########################
-
-global q
-q = deque()
-
-if args.predictive:
-    global model
-    model = gensim.models.Doc2Vec.load("doc2vec.bin")
-
-
-app = Flask(__name__)
-app.config['index'] = index.Index()
 
 @app.before_first_request
 def spawn_download_queue_watcher():
@@ -121,9 +122,13 @@ def spawn_download_queue_watcher():
     thread.start()
 
 
+###########################
+# Routes
+###########################
+
 @app.route("/visit", methods=['POST'])
 def visit():
-    #add to queue here and return fast
+    # add to queue here and return fast
     url = request.form['url']
     access_time = request.form['access_time']
     query = request.form['query']
@@ -131,6 +136,7 @@ def visit():
     print("[POST /visit] Visted {}".format(url))
     if not url_is_blacklisted(url):
         q.append(url)
+
    #if request.form['query']:
    #    results = google.search(request.form['query'], stop = 5)
    #    for result in results:
@@ -141,8 +147,10 @@ def visit():
    #            q.append(link)
 
     if args.predictive:
-        thread = threading.Thread(target=algLogic.main, args=[url,access_time,query, model, q])
+        thread = threading.Thread(target=algLogic.main,
+                                  args=[url, access_time,query, doc2vec_model, q])
         thread.start()
+
     return "Post Received! URL: {}\n".format(url)
 
 
@@ -154,10 +162,6 @@ if args.debug:
         return "Printed queue contents", 200
 
 
-def get_path(url):
-    return url.replace("http://", "").replace("https://", "")
-
-
 @app.route("/search")
 def search():
     # Get query_string from arguments
@@ -165,14 +169,14 @@ def search():
     print('[GET /search] Received query {}'.format(query_string))
 
     # Get search results from the index, and add in paths
-    raw_results = app.config['index'].search(query_string)
+    raw_results = search_index.search(query_string)
 
     # Copy results into dicts for modification and serialization
     results = [dict(result) for result in raw_results]
 
     for result in results:
         # TODO(ajayjain): Add in a synopsis of the article
-        result['path'] = get_path(result['url'])
+        result['path'] = path_utils.strip_scheme(result['url'])
         result['body_text'] = result['summary_text']
         del result['summary_text']
 
@@ -207,18 +211,21 @@ def index_path():
     path = request.args['path']
     remote_url = "http://{}".format(path)
     path = os.path.join(WGET_DOWNLOADS, path)
-    app.config['index'].index_html(remote_url, path)
+    search_index.index_html(remote_url, path)
     return "Indexed {}".format(path)
 
 
-def signal_handler(signal, frame):
+def on_exit(signal, frame):
     """Clear queue to maintain queue thread safety"""
-    print('You pressed Ctrl+C!')
+    print('You pressed Ctrl+C! Clearing dowload queue ({} items)...'
+          .format(len(q)))
     while len(q) > 0:
         q.pop()
+    print('Cleared queue.')
     sys.exit(0)
 
 
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGINT, on_exit)
     app.run(port=args.port, debug=args.debug)
+
