@@ -173,27 +173,24 @@ def search():
     return jsonify(results)
 
 
-@app.route("/retrieve/<path:url>", methods=['GET'])
-def retrieve(url):
-    with SqliteDict(RETRIEVE_CACHE_PATH) as url_map:
-        url = path_utils.strip_scheme(url)
-        try:
-            path = url_map[url]
-            if path.endswith('.html'):
-                with open(os.path.join(WGET_DOWNLOADS, path), 'r') as f:
-                    return f.read()
-                    doc = Document(f.read())
-                    print(doc.content())
-                    return doc.content()
-            else:
-                return send_from_directory(WGET_DOWNLOADS, path)
-        except KeyError:
-            url_without_extension = url.rpartition('.')[0]
-            try:
-                path = url_map[url_without_extension]
-                return send_from_directory(WGET_DOWNLOADS, path)
-            except KeyError:
-                return "not found!", 404
+@app.route("/retrieve/<path:url_or_path>", methods=['GET'])
+def retrieve(url_or_path):
+    """Serve the local file corresponding to a remote path or local path
+
+    Allows for both local and remote paths. Returns a 404 if neither is found to map
+    to a local file, or otherwise a 200 and served file."""
+
+    url_or_path = path_utils.strip_scheme(url_or_path)
+
+    # Check if the parameter is a known remote URL. If so, fetch the corresponding
+    # local path. Default to the local path.
+    with SqliteDict(RETRIEVE_CACHE_PATH) as remote_local_map:
+        local_path = remote_local_map.get(url_or_path, url_or_path)
+
+    if os.path.isfile(os.path.join(WGET_DOWNLOADS, local_path)):
+        return send_from_directory(WGET_DOWNLOADS, local_path)
+
+    return "Not found!", 404
 
 
 @app.route("/index_path")

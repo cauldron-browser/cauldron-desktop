@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-import os
-import sys
-import index
-
 import logging
+import os
 from sqlitedict import SqliteDict
+import sys
+
+import index
 import path_utils
 
 CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
