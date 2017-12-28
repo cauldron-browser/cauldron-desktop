@@ -1,41 +1,56 @@
+#!/usr/bin/env python
+
+import argparse
+from collections import deque
+from multiprocessing import Queue
 import os
 import subprocess
 import sys
 import time
 import threading
-from multiprocessing import Queue
 from urllib.parse import urlsplit
-from collections import deque
-import google
-import path_utils
-import gensim
 
-from flask import Flask, request, jsonify, send_from_directory
 from bs4 import BeautifulSoup
+from flask import Flask, request, jsonify, send_from_directory
+import gensim
+import google
+import signal
+from sqlitedict import SqliteDict
 
 import algLogic
 import index
-from sqlitedict import SqliteDict
+import path_utils
 
-global q
-q = deque()
 
-global model
-model = gensim.models.Doc2Vec.load("doc2vec.bin")
-
+###########################
+# Parameters and arguments
+###########################
 
 CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
 WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
 WGET_DOWNLOADS = os.path.join(WGET_DIR, "downloads")
 RETRIEVE_CACHE_PATH = os.path.join(CAULDRON_DIR, "url_map.db")
 
+DEBUG = False
+
 DOWNLOAD_BLACKLIST = ['www.google.com', 'www.google.fi']
 
 IPS = []
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--predictive", default=False, action="store_true",
+                    help="Predictively download sites based on semantic similarity. "
+                         "Has high memory usage (1-2 GB).")
+parser.add_argument("--debug", default=False, action="store_true",
+                    help="Start Flask server in debug mode")
+parser.add_argument("--port", default=8091,
+                    help="Port on which to run server")
+args = parser.parse_args()
+
+
 def url_is_blacklisted(url):
     parse = urlsplit(url)
-    domain = parse.netloc 
+    domain = parse.netloc
     return domain in DOWNLOAD_BLACKLIST
 
 def wget_command(url):
@@ -62,15 +77,20 @@ def wget_command(url):
                '2>&1 > /dev/null | ./worker.py']
     return ' '.join(command)
 
-def create_app():
-    app = Flask(__name__)
-    app.config['index'] = index.Index()
-    return app
+###########################
+# Globals
+###########################
 
-# wget --header="Accept: text/html" --user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0" -e robots=off --timestamping --convert-links --adjust-extension --page-requisites --span-hosts
+global q
+q = deque()
 
-app = create_app()
+if args.predictive:
+    global model
+    model = gensim.models.Doc2Vec.load("doc2vec.bin")
 
+
+app = Flask(__name__)
+app.config['index'] = index.Index()
 
 @app.before_first_request
 def spawn_download_queue_watcher():
@@ -101,7 +121,6 @@ def spawn_download_queue_watcher():
     thread.start()
 
 
-
 @app.route("/visit", methods=['POST'])
 def visit():
     #add to queue here and return fast
@@ -114,23 +133,30 @@ def visit():
         q.append(url)
    #if request.form['query']:
    #    results = google.search(request.form['query'], stop = 5)
-   #    for result in results:       
+   #    for result in results:
    #        q.append(result)
    #else:
    #    for link in algLogic.findAllLinks(url):
    #        if not url_is_blacklisted(link):
    #            q.append(link)
-    thread = threading.Thread(target=algLogic.main, args=[url,access_time,query, model, q])
-    thread.start()
+
+    if args.predictive:
+        thread = threading.Thread(target=algLogic.main, args=[url,access_time,query, model, q])
+        thread.start()
     return "Post Received! URL: {}\n".format(url)
 
-@app.route("/check-q")
-def check_queue():
-    print(q)
-    return "checked", 200
+
+if args.debug:
+    @app.route("/check-q")
+    def check_queue():
+        """Debug method to see current items on the queue"""
+        print(q)
+        return "Printed queue contents", 200
+
 
 def get_path(url):
     return url.replace("http://", "").replace("https://", "")
+
 
 @app.route("/search")
 def search():
@@ -152,11 +178,12 @@ def search():
 
     return jsonify(results)
 
+
 @app.route("/retrieve/<path:url>", methods=['GET'])
 def retrieve(url):
     with SqliteDict(RETRIEVE_CACHE_PATH) as url_map:
         url = path_utils.strip_scheme(url)
-        try: 
+        try:
             path = url_map[url]
             if path.endswith('.html'):
                 with open(os.path.join(WGET_DOWNLOADS, path), 'r') as f:
@@ -164,7 +191,7 @@ def retrieve(url):
                     doc = Document(f.read())
                     print(doc.content())
                     return doc.content()
-            else: 
+            else:
                 return send_from_directory(WGET_DOWNLOADS, path)
         except KeyError:
             url_without_extension = url.rpartition('.')[0]
@@ -174,6 +201,7 @@ def retrieve(url):
             except KeyError:
                 return "not found!", 404
 
+
 @app.route("/index_path")
 def index_path():
     path = request.args['path']
@@ -182,15 +210,15 @@ def index_path():
     app.config['index'].index_html(remote_url, path)
     return "Indexed {}".format(path)
 
-if __name__ == '__main__':
-    import signal
-    def signal_handler(signal, frame):
-        print('You pressed Ctrl+C!')
-        # clear queue 
-        # maintains queue thread safety
-        while len(q) > 0:
-            q.pop()
-        sys.exit(0)
-    signal.signal(signal.SIGINT, signal_handler)
 
-    app.run(port=8091, debug=True)
+def signal_handler(signal, frame):
+    """Clear queue to maintain queue thread safety"""
+    print('You pressed Ctrl+C!')
+    while len(q) > 0:
+        q.pop()
+    sys.exit(0)
+
+
+if __name__ == '__main__':
+    signal.signal(signal.SIGINT, signal_handler)
+    app.run(port=args.port, debug=args.debug)
