@@ -2,6 +2,7 @@
 
 import argparse
 from collections import deque
+import fnmatch
 from multiprocessing import Queue
 import os
 import subprocess
@@ -44,16 +45,20 @@ args = parser.parse_args()
 
 q = deque()
 
-if args.predictive:
-    doc2vec_model = gensim.models.Doc2Vec.load("doc2vec.bin")
-
 search_index = index.Index()
 
-download_blacklist = set()
+download_blacklist = []
 with open(DOWNLOAD_BLACKLIST_PATH, "r") as blacklist_file:
     for site in blacklist_file:
         site = site.strip()
-        download_blacklist.add(site)
+        download_blacklist.append(site)
+
+        # If *.example.com is blacklisted, also blacklist example.com
+        if site.startswith("*."):
+            download_blacklist.append(site[2:])
+
+if args.predictive:
+    doc2vec_model = gensim.models.Doc2Vec.load("doc2vec.bin")
 
 app = Flask(__name__)
 
@@ -65,7 +70,12 @@ app = Flask(__name__)
 def url_is_blacklisted(url):
     parse = urlsplit(url)
     domain = parse.netloc
-    return domain in download_blacklist
+
+    for blocked_pattern in download_blacklist:
+        if fnmatch.fnmatch(domain, blocked_pattern):
+            return True
+
+    return False
 
 
 def wget_command(url):
@@ -206,8 +216,10 @@ def on_exit(signal, frame):
     """Clear queue to maintain queue thread safety"""
     print('You pressed Ctrl+C! Clearing download queue ({} items)...'
           .format(len(q)))
+
     while len(q) > 0:
         q.pop()
+
     print('Cleared queue.')
     sys.exit(0)
 

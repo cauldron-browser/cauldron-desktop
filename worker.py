@@ -6,15 +6,15 @@ from sqlitedict import SqliteDict
 import sys
 
 import index
+from paths import *
 import path_utils
 
-CAULDRON_DIR = os.environ.get("CAULDRON_DIR", "")
-WGET_DIR = os.path.join(CAULDRON_DIR, "wget")
-WGET_DOWNLOADS = os.path.join(WGET_DIR, "downloads")
-RETRIEVE_CACHE_PATH = os.path.join(CAULDRON_DIR, "url_map.db")
-
+# Initialize logger
+os.makedirs(WGET_DIR, exist_ok=True)
+with open(WORKER_LOG_PATH, 'a') as log_file:
+    log_file.write('')
 logger = logging.getLogger('worker')
-hdlr = logging.FileHandler(os.path.join(WGET_DIR, 'worker.log'))
+hdlr = logging.FileHandler(WORKER_LOG_PATH)
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
@@ -38,7 +38,6 @@ def parse(line):
 
 
 def is_html_file(path):
-    logger.info(path)
     return path.endswith('.html')
 
 
@@ -65,7 +64,6 @@ def main():
             url_map[remote_url] = local_path
 
         url_map.commit()
-        #print(list(url_map.keys()))
 
     for remote_url, local_path in parsed_paths:
         if is_html_file(local_path):

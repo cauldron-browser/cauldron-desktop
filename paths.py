@@ -9,3 +9,4 @@ DOWNLOAD_BLACKLIST_PATH = os.path.join(CAULDRON_DIR, "download_blacklist.txt")
 
 INDEX_DIR = os.path.join(CAULDRON_DIR, "index")
 
+WORKER_LOG_PATH = os.path.join(WGET_DIR, 'worker.log')

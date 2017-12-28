@@ -1,5 +1,6 @@
 accounts.google.com
 www.google.com
 www.google.fi
-www.youtube.com
-messenger.com
+*.youtube.com
+*.messenger.com
+*.slack.com

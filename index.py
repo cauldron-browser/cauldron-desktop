@@ -3,6 +3,7 @@ import os
 import sys
 
 from bs4 import BeautifulSoup
+import lxml
 import readability
 import whoosh.index
 import whoosh.fields
@@ -68,10 +69,14 @@ class Index(object):
                 print('UnicodeDecodeError in Index, reading a file', e)
                 return
 
-        parsed = parse_html_string(content)
-
-        # Add to the index
-        self.index_parsed(parsed.title, remote_url, parsed.content)
+        try:
+            parsed = parse_html_string(content)
+            # Add to the index
+            self.index_parsed(parsed.title, remote_url, parsed.content)
+        except lxml.etree.ParserError as err:
+            print("ParserError while parsing HTML content:", err)
+            print("\tremote url:", remote_url)
+            print("\tlocal path:", local_path)
 
     def index_parsed(self, title, url, body_text):
         preview = make_preview(body_text, max_length=100)
@@ -79,17 +84,20 @@ class Index(object):
         print("[index index_parsed] Indexing...")
         print("\turl:  ", url)
         print("\ttitle:", title)
-        print("\tbody: ", preview, "...")
+        print("\tbody: ", preview)
 
-        # TODO(ajayjain): Bulk write documents to the index
-        # Wrapping the AsyncWriter in a with clause seems to cause errors:
-        #     "whoosh.writing.IndexingError: This writer is closed"
-        writer = whoosh.writing.AsyncWriter(self.index)
-        writer.update_document(
-                title=title,
-                url=url,
-                body_text=body_text)
-        writer.commit()
+        if body_text:
+            # TODO(ajayjain): Bulk write documents to the index
+            # Wrapping the AsyncWriter in a with clause seems to cause errors:
+            #     "whoosh.writing.IndexingError: This writer is closed"
+            writer = whoosh.writing.AsyncWriter(self.index)
+            writer.update_document(
+                    title=title,
+                    url=url,
+                    body_text=body_text)
+            writer.commit()
+        else:
+            print("No content extracted, not indexing\n")
 
     def search(self, query_string):
         """Search for results in the index by a query string"""
