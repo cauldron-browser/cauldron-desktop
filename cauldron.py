@@ -17,10 +17,10 @@ from flask import Flask, request, jsonify, send_from_directory
 import signal
 from sqlitedict import SqliteDict
 
-import algLogic
 import index
 from paths import *
 import path_utils
+import worker
 
 
 ###########################
@@ -35,6 +35,8 @@ parser.add_argument("--debug", default=False, action="store_true",
                     help="Start Flask server in debug mode")
 parser.add_argument("--port", default=8091,
                     help="Port on which to run server")
+parser.add_argument("--max_workers", default=4,
+                    help="Maximum number of concurrent downloads to allow")
 args = parser.parse_args()
 
 
@@ -47,16 +49,21 @@ q = deque()
 search_index = index.Index()
 
 download_blacklist = []
-with open(DOWNLOAD_BLACKLIST_PATH, "r") as blacklist_file:
-    for site in blacklist_file:
-        site = site.strip()
-        download_blacklist.append(site)
+if os.path.isfile(DOWNLOAD_BLACKLIST_PATH):
+    with open(DOWNLOAD_BLACKLIST_PATH, "r") as blacklist_file:
+        for site in blacklist_file:
+            site = site.strip()
+            download_blacklist.append(site)
 
-        # If *.example.com is blacklisted, also blacklist example.com
-        if site.startswith("*."):
-            download_blacklist.append(site[2:])
+            # If *.example.com is blacklisted, also blacklist example.com
+            if site.startswith("*."):
+                download_blacklist.append(site[2:])
+else:
+    print("WARN: {0} not found, not using a download blacklist"
+          .format(DOWNLOAD_BLACKLIST_PATH))
 
 if args.predictive:
+    import algLogic
     import gensim
     doc2vec_model = gensim.models.Doc2Vec.load("doc2vec.bin")
 
@@ -99,7 +106,8 @@ def wget_command(url):
                '-nv',
                '--span-hosts',
                '"{}"'.format(url),
-               '2>&1 > /dev/null | ./worker.py']
+               '2>&1 > /dev/null']
+              # '2>&1 > /dev/null | ./worker.py']
     return ' '.join(command)
 
 
@@ -112,8 +120,20 @@ def spawn_download_queue_watcher():
             # Get the next queued URL
             try:
                 url = q.popleft()
-                subprocesses.append(subprocess.Popen(wget_command(url), shell=True))
-                # subprocesses[-1].wait()
+
+                proc = subprocess.Popen(wget_command(url),
+                                        shell=True,
+                                        stdout=subprocess.PIPE)
+
+                out, err = proc.communicate()
+                out = out.decode("utf-8")
+                out_lines = out.split("\n")
+
+                worker.process_wget_output(out_lines)
+
+                subprocesses.append(proc)
+
+                return True
             except IndexError:
                 # The queue was empty, nothing to download
                 return False
@@ -123,7 +143,7 @@ def spawn_download_queue_watcher():
                 if subproc.poll() is not None:
                     subprocesses.remove(subproc)
 
-            if len(q) and len(subprocesses) <= 4:
+            if len(q) and len(subprocesses) < args.max_workers:
                 download_next_url()
 
             time.sleep(0.1)

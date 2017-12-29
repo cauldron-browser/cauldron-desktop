@@ -1,0 +1,11 @@
+[Unit]
+Description=Desktop agent for Cauldron browser extension
+After=syslog.target network.target
+
+[Service]
+ExecStart=/usr/bin/env cauldron
+Restart=always
+SyslogIdentifier=cauldron
+
+[Install]
+WantedBy=multi-user.target

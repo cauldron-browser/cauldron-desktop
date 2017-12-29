@@ -41,16 +41,16 @@ def is_html_file(path):
     return path.endswith('.html')
 
 
-def main():
+def process_wget_output(lines):
     ind = index.Index()
 
-    logger.info('Worker main')
+    logger.info('Worker processing lines')
     parsed_paths = []
 
-    for line in sys.stdin:
+    for line in lines:
         p = parse(line)
 
-        logger.info('Worker stdin {}'.format(line))
+        logger.info('Worker input {}'.format(line))
         logger.info('Parsed {}'.format(p))
 
         if p is not None:
@@ -74,5 +74,5 @@ def main():
     logger.info('Worker EOF reached')
 
 if __name__ == '__main__':
-    main()
+    process_wget_output(sys.stdin)
 
