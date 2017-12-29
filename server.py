@@ -13,8 +13,7 @@ from urllib.parse import urlsplit
 
 from bs4 import BeautifulSoup
 from flask import Flask, request, jsonify, send_from_directory
-import gensim
-import google
+#import google
 import signal
 from sqlitedict import SqliteDict
 
@@ -58,6 +57,7 @@ with open(DOWNLOAD_BLACKLIST_PATH, "r") as blacklist_file:
             download_blacklist.append(site[2:])
 
 if args.predictive:
+    import gensim
     doc2vec_model = gensim.models.Doc2Vec.load("doc2vec.bin")
 
 app = Flask(__name__)

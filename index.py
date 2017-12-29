@@ -106,16 +106,18 @@ class Index(object):
         query = query_parser.parse(query_string)
 
         searcher = self.index.searcher()
-        raw_results = searcher.search(query)
+        raw_results = searcher.search(query, terms=True)
 
-        # Copy results into dicts for modification and serialization
-        results = [dict(result) for result in raw_results]
-
-        for result in results:
+        results = []
+        for hit in raw_results:
+            result = {}
+            result['title'] = hit['title']
+            result['url'] = hit['url']
             # Remove scheme from URL displayed to user
-            result['path'] = path_utils.strip_scheme(result['url'])
-            # Display only a preview of the article text
-            result['body_text'] = make_preview(result['body_text'])
+            result['path'] = path_utils.strip_scheme(hit['url'])
+            # Display highlighted text at keywords
+            result['body_text'] = hit.highlights("body_text")
+            results.append(result)
 
         return results
 
