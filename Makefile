@@ -8,3 +8,6 @@ server:
 
 install:
 	pip install -r requirements.txt
+
+optipng:
+	find wget/downloads -name '*.png' -print0 | xargs -0 optipng -o7
