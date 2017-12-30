@@ -102,7 +102,7 @@ class Index(object):
     def search(self, query_string):
         """Search for results in the index by a query string"""
         # Parse user query string
-        query_parser = whoosh.qparser.QueryParser("body_text", self.index.schema)
+        query_parser = whoosh.qparser.MultifieldParser(["title", "body_text", "url"], self.index.schema)
         query = query_parser.parse(query_string)
 
         searcher = self.index.searcher()
@@ -111,12 +111,24 @@ class Index(object):
         results = []
         for hit in raw_results:
             result = {}
-            result['title'] = hit['title']
+
+            # Display highlighted text at query word matches in title
+            result['title'] = hit.highlights('title')
+            if not result['title']:
+                # No hits on the title, return the full title
+                result['title'] = hit['title']
+
             result['url'] = hit['url']
+
             # Remove scheme from URL displayed to user
             result['path'] = path_utils.strip_scheme(hit['url'])
-            # Display highlighted text at keywords
+
+            # Display highlighted text at query word matches in body
             result['body_text'] = hit.highlights("body_text")
+            if not result['body_text']:
+                # No hits on the body, return an excerpt
+                result['body_text'] = make_preview(hit['body_text'], 100)
+
             results.append(result)
 
         return results

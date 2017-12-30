@@ -7,12 +7,13 @@ server:
 	CAULDRON_DIR=~/.cache/cauldron ./dist/server
 
 install-ubuntu:
+	sudo systemctl stop desktop.cauldron.service
 	mkdir -p ~/.cache/cauldron
 	cp dist/download_blacklist.txt ~/.cache/cauldron
 	sudo cp dist/cauldron /usr/local/bin
 	sudo cp install/desktop.cauldron.service /etc/systemd/system/desktop.cauldron.service
 	sudo systemctl daemon-reload
-	sudo systemctl restart desktop.cauldron.service
+	sudo systemctl start desktop.cauldron.service
 	sudo systemctl enable desktop.cauldron.service
 
 build:

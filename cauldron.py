@@ -12,7 +12,7 @@ import threading
 from urllib.parse import urlsplit
 
 from bs4 import BeautifulSoup
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, redirect
 #import google
 import signal
 from sqlitedict import SqliteDict
@@ -220,7 +220,7 @@ def retrieve(url_or_path):
     if os.path.isfile(os.path.join(WGET_DOWNLOADS, local_path)):
         return send_from_directory(WGET_DOWNLOADS, local_path)
 
-    return "Not found!", 404
+    return redirect("//" + url_or_path, code=302)
 
 
 @app.route("/index_path")
