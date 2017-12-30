@@ -220,7 +220,8 @@ def retrieve(url_or_path):
     if os.path.isfile(os.path.join(WGET_DOWNLOADS, local_path)):
         return send_from_directory(WGET_DOWNLOADS, local_path)
 
-    return redirect("//" + url_or_path, code=302)
+    return "Uh oh! Looks like you're offline, but {} was not found in Cauldron's cache!".format(url_or_path), 404
+    #return redirect("//" + url_or_path, code=302)
 
 
 @app.route("/index_path")
