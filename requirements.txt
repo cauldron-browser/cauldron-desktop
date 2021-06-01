@@ -32,6 +32,6 @@ six==1.11.0
 smart-open==1.5.3
 sqlitedict==1.5.0
 texttable==1.1.1
-urllib3==1.22
+urllib3==1.26.5
 Werkzeug==0.12.2
 Whoosh==2.7.4
